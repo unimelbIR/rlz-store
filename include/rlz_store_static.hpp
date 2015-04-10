@@ -58,7 +58,7 @@ public:
     }
 
     std::vector<uint8_t>
-    block(const size_t block_id,bool verbose = false) const {
+    block(const size_t block_id) const {
         std::vector<uint8_t> block_content;
         auto block_start = m_blockmap.block_offset(block_id);
         auto num_factors = m_blockmap.block_factors(block_id);
@@ -67,16 +67,8 @@ public:
         std::vector<factor_data> factors(num_factors);
         factor_encoder::decode_block(m_factor_stream,num_factors,factors.begin());
 
-        if(verbose) {
-            LOG(INFO) << "block_start = " << block_start;
-            LOG(INFO) << "num_factors = " << num_factors;
-        }
-
         size_t i=0;
         for(const auto& factor : factors) {
-            if(verbose) {
-                LOG(INFO) << "F("<<i<<") = " << factor.offset << " , " << factor.len;
-            }
             if(factor.len!=0) {
                 auto begin = m_dict.begin()+factor.offset;
                 std::copy(begin,begin+factor.len,std::back_inserter<>(block_content));

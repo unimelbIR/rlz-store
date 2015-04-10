@@ -41,6 +41,7 @@ endif()
 
 add_subdirectory(external/sdsl-lite)
 add_subdirectory(external/googletest)
+add_subdirectory(external/zlib)
 
 include_directories("${PROJECT_SOURCE_DIR}/external/googletest/include"
                      ${CMAKE_HOME_DIRECTORY}/include
@@ -49,6 +50,7 @@ include_directories("${PROJECT_SOURCE_DIR}/external/googletest/include"
                      ${CMAKE_HOME_DIRECTORY}/external/googletest/include
                      ${CMAKE_HOME_DIRECTORY}/external/sdsl-lite/external/FastPFor/headers/
                      ${CMAKE_HOME_DIRECTORY}/external/easyloggingpp/src/
+                     ${CMAKE_HOME_DIRECTORY}/external/zlib/
                     )
 
 
@@ -62,3 +64,6 @@ target_link_libraries(rlzs-create.x sdsl pthread divsufsort divsufsort64 z FastP
 
 add_executable(create-sdsl-input.x src/create-sdsl-input.cpp)
 target_link_libraries(create-sdsl-input.x sdsl pthread z)
+
+add_executable(test-count-min.x src/test_count_min.cpp)
+target_link_libraries(test-count-min.x sdsl pthread z)

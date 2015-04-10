@@ -10,3 +10,6 @@
 [submodule "external/sdsl-lite"]
 	path = external/sdsl-lite
 	url = git@github.com:mpetri/sdsl-lite.git
+[submodule "external/zlib"]
+	path = external/zlib
+	url = https://github.com/madler/zlib

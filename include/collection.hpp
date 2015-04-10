@@ -17,6 +17,10 @@ const std::string KEY_BLOCKFACTORS = "BLOCKFACTORS";
 
 const std::string PARAM_DICT_HASH = "DICT_HASH";
 
+const std::string KEY_ZLIB = "ZLIB";
+const std::string KEY_ZLIB_OFFSETS = "ZLIB_OFFSETS";
+const std::string KEY_ZLIB_LEN = "ZLIB_LEN";
+
 struct collection {
     std::string path;
     std::map<std::string,std::string> param_map;

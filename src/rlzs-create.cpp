@@ -118,23 +118,30 @@ int main(int argc,const char* argv[])
     collection col(args.collection_dir);
 
     /* create rlz index */
-    {
-        auto rlz_store = rlz_type_standard::builder{}
-                            .set_rebuild(args.rebuild)
-                            .set_threads(args.threads)
-                            .build_or_load(col);
+    // {
+    //     auto rlz_store = rlz_type_standard::builder{}
+    //                         .set_rebuild(args.rebuild)
+    //                         .set_threads(args.threads)
+    //                         .build_or_load(col);
 
-        if(args.verify) verify_index(col,rlz_store);
-    }
+    //     if(args.verify) verify_index(col,rlz_store);
+    // }
+    // { // use uncompressed sa for factorization
+    //     auto rlz_store = rlz_type_salcp::builder{}
+    //                         .set_rebuild(args.rebuild)
+    //                         .set_threads(args.threads)
+    //                         .build_or_load(col);
+
+    //     if(args.verify) verify_index(col,rlz_store);
+    // }
     { // use uncompressed sa for factorization
-        auto rlz_store = rlz_type_salcp::builder{}
+        auto zlib_store = zlib_store_static<>::builder{}
                             .set_rebuild(args.rebuild)
                             .set_threads(args.threads)
                             .build_or_load(col);
 
-        if(args.verify) verify_index(col,rlz_store);
+        if(args.verify) verify_index(col,zlib_store);
     }
-
 
     return EXIT_SUCCESS;
 }

@@ -7,6 +7,7 @@
 #include "dict_indexes.hpp"
 
 #include "rlz_store_static.hpp"
+#include "zlib_store_static.hpp"
 
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/optpfor_vector.hpp>
