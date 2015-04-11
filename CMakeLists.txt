@@ -67,3 +67,6 @@ target_link_libraries(create-sdsl-input.x sdsl pthread z)
 
 add_executable(test-count-min.x src/test_count_min.cpp)
 target_link_libraries(test-count-min.x sdsl pthread z)
+
+add_executable(test-chunk-freq.x src/test-chunk-freq.cpp)
+target_link_libraries(test-chunk-freq.x sdsl pthread z)

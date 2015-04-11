@@ -114,12 +114,15 @@ private:
 private:
 	inline void update_topk(T& item,uint64_t estimate) {
 		if( m_topk_set.size() < m_k ) {
-			m_topk_pq.emplace_back(item,estimate);
-			m_topk_set.emplace(item);
-			if(m_topk_pq.size() == m_k) {
-				// create the heap after we have seen k items
-				std::make_heap(m_topk_pq.begin(),m_topk_pq.end(),
-							   std::greater<topk_item>());
+			auto itr = m_topk_set.find(item);
+			if(itr == m_topk_set.end()) {
+				m_topk_pq.emplace_back(item,estimate);
+				m_topk_set.emplace(item);
+				if(m_topk_pq.size() == m_k) {
+					// create the heap after we have seen k items
+					std::make_heap(m_topk_pq.begin(),m_topk_pq.end(),
+								   std::greater<topk_item>());
+				}
 			}
 		} else {
 			auto itr = m_topk_set.find(item);
@@ -141,7 +144,7 @@ private:
 				}
 			} else {
 				// check against smallest in pq
-				if( m_topk_pq[0].estimate < estimate ) {
+				if( estimate != 1 && m_topk_pq[0].estimate < estimate ) {
 					// throw out the smallest and put the new one in
 					std::pop_heap(m_topk_pq.begin(),m_topk_pq.end());
 					m_topk_set.erase(m_topk_pq.back().item);
