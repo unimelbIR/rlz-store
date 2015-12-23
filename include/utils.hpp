@@ -243,4 +243,18 @@ struct rlz_timer {
     }
 };
 
+
+template<uint64_t N, uint64_t P = 0>
+constexpr typename std::enable_if<(N <= 1), uint64_t>::type CLog2()
+{
+   return P;
+}
+
+template<uint64_t N, uint64_t P = 0>
+constexpr typename std::enable_if<!(N <= 1), uint64_t>::type CLog2()
+{
+   return CLog2<N / 2, P + 1>();
+}
+
+
 } // end of util namespace
