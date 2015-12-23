@@ -19,14 +19,6 @@ struct vbyte {
         return "vbyte";
     }
 
-    inline void set_deflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
-    inline void set_inflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
     template <typename T>
     inline uint64_t encoded_length(const T& x) const
     {
@@ -112,14 +104,6 @@ public:
         return "u" + std::to_string(t_width);
     }
 
-    inline void set_deflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
-    inline void set_inflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
     template <class t_bit_ostream, class T>
     inline void encode(t_bit_ostream& os, T* in_buf, size_t n) const
     {
@@ -141,14 +125,6 @@ public:
     static std::string type()
     {
         return "u" + std::to_string(8 * sizeof(t_int_type)) + "a";
-    }
-
-    inline void set_deflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
-    inline void set_inflate_dictionary(const uint8_t*, uint32_t) const
-    {
     }
 
     template <class t_bit_ostream>
@@ -211,20 +187,6 @@ public:
     static std::string type()
     {
         return "zlib-" + std::to_string(t_level);
-    }
-
-    inline void set_deflate_dictionary(const uint8_t* dict_ptr, uint32_t n) const
-    {
-        auto ret = deflateSetDictionary(&dstrm, dict_ptr, n);
-        if (ret != Z_OK) {
-            LOG(FATAL) << "zlib-encode: set dictionary error:" << ret;
-        }
-    }
-
-    inline void set_inflate_dictionary(const uint8_t* dptr, uint32_t n) const
-    {
-        dict_ptr = dptr;
-        dict_size = n;
     }
 
     template <class t_bit_ostream, class T>
@@ -481,18 +443,6 @@ public:
         return "lz4hc-" + std::to_string(t_level);
     }
 
-    inline void set_deflate_dictionary(const uint8_t* dptr, uint32_t n) const
-    {
-        dict_ptr = (const char*)dptr;
-        dict_size = n;
-    }
-
-    inline void set_inflate_dictionary(const uint8_t* dptr, uint32_t n) const
-    {
-        dict_ptr = (const char*)dptr;
-        dict_size = n;
-    }
-
     template <class t_bit_ostream, class T>
     inline void encode(t_bit_ostream& os, const T* in_buf, size_t n) const
     {
@@ -541,14 +491,6 @@ public:
     static std::string type()
     {
         return "bzip2-" + std::to_string(t_level);
-    }
-
-    inline void set_deflate_dictionary(const uint8_t*, uint32_t) const
-    {
-    }
-
-    inline void set_inflate_dictionary(const uint8_t*, uint32_t) const
-    {
     }
 
     template <class t_bit_ostream, class T>
@@ -606,37 +548,85 @@ public:
     }
 };
 
-//with the dict_index_sa_length_selector strategy - match lengths are a known multiple of LM. This coder simply removes/adds the LM component, before
-// passing on to the next stage of coding say U32 or Zlib (given by t_coder c)
-template <int lm, class t_coder>
-struct length_multiplier {
-public:
-    static const uint32_t lm_buf_len = 100000;
-
-private:
-    mutable uint32_t buf[lm_buf_len];
-    t_coder next_stage_coder;
-
+struct elias_fano {
 public:
     static std::string type()
     {
-        return "length_multiplier-" + std::to_string(lm) + "-" + t_coder::type();
+        return "ef";
     }
-    template <class t_bit_ostream, class T>
-    inline void encode(t_bit_ostream& os, T* in_buf, size_t n) const
+
+    template <class T>
+    inline uint64_t determine_size(T* , size_t n, size_t u) const
     {
-        for (size_t i = 0; i < n; i++) {
-            buf[i] = in_buf[i] / lm;
+        uint8_t logm = sdsl::bits::hi(n)+1;
+        uint8_t logu = sdsl::bits::hi(u)+1;
+        uint8_t width_low = 0;
+        if (logu < logm) {
+            width_low = 1;
+        } else {
+            if (logm == logu) logm--;
+            width_low = logu - logm;
         }
-        next_stage_coder.encode(os, buf, n);
+        return n*width_low + 2*n;
     }
-    template <class t_bit_istream, class T>
-    inline void decode(const t_bit_istream& is, T* out_buf, size_t n) const
+
+    template <class t_bit_ostream, class T>
+    inline void encode(t_bit_ostream& os, T* in_buf, size_t n, size_t u) const
     {
-        next_stage_coder.decode(is, out_buf, n);
+        uint8_t logm = sdsl::bits::hi(n)+1;
+        uint8_t logu = sdsl::bits::hi(u)+1;
+        uint8_t width_low = 0;
+        if (logu < logm) {
+            width_low = 1;
+        } else {
+            if (logm == logu) logm--;
+            width_low = logu - logm;
+        }
+
+        // write low
+        os.expand_if_needed(n*width_low);
         for (size_t i = 0; i < n; i++) {
-            out_buf[i] = out_buf[i] * lm;
+            os.put_int_no_size_check(in_buf[i], width_low);
+        }
+        // write high
+        size_t num_zeros = (u >> width_low);
+        os.expand_if_needed(num_zeros+n+1);
+        size_t last_high=0;
+        for (size_t i = 0; i < n; i++) {
+            auto position = in_buf[i];
+            size_t cur_high = position >> width_low;
+            os.put_unary_no_size_check(cur_high-last_high);
+            last_high = cur_high;
+        }
+    }
+
+    template <class t_bit_istream, class T>
+    inline void decode(const t_bit_istream& is, T* out_buf, size_t n, size_t u) const
+    {
+        uint8_t logm = sdsl::bits::hi(n)+1;
+        uint8_t logu = sdsl::bits::hi(u)+1;
+        uint8_t width_low = 0;
+
+        // read low 
+        if (logu < logm) {
+            width_low = 1;
+        } else {
+            if (logm == logu) logm--;
+            width_low = logu - logm;
+        }
+        for (size_t i = 0; i < n; i++) {
+            auto low = is.get_int(width_low);
+            out_buf[i] = low;
+        }
+        // read high
+        size_t last_high=0;
+        for (size_t i = 0; i < n; i++) {
+            auto cur_high = is.get_unary();
+            auto high = last_high + cur_high;
+            last_high = high;
+            out_buf[i] = (high << width_low) + out_buf[i];
         }
     }
 };
+
 }

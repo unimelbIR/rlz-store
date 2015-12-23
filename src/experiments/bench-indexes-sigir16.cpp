@@ -89,6 +89,16 @@ int main(int argc, const char* argv[])
                                                   baseline_factor_coder_zlib,
                                                   block_map_type>; 
 
+    using p0_coder = factor_coder_blocked_subdict<literal_threshold,dict_page_size,num_pages_in_dict,coder::fixed<8>, coder::elias_fano, coder::fixed<dict_pointer_width>, coder::vbyte >;                                              
+    using rlz_p0 = rlz_store_static<dict_creation_strategy,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  baseline_factor_coder_zlib,
+                                                  block_map_type>; 
+
     {
         auto rlz_store = baseline_type_packed::builder{}
                              .set_rebuild(args.rebuild)

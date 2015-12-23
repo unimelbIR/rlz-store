@@ -49,7 +49,7 @@ public:
                 }
                 dict.push_back(0); // zero terminate for SA construction
             }
-            LOG(INFO) << "dict size in bytes = " << dict.size();
+            LOG(INFO) << "\tdict size in bytes = " << dict.size();
             /* store to disk */
             LOG(INFO) << "\t"
                       << "Writing dictionary.";
