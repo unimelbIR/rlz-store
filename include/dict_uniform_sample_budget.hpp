@@ -41,8 +41,9 @@ public:
                 LOG(INFO) << "\tSample steps = " << sample_step;
                 for (size_t i = 0; i < n; i += sample_step) {
                     for (size_t j = 0; j < block_size; j++) {
-                        if (i + j >= (n-2))
+                        if (i + j >= (n-1))
                             break;
+                        if(dict.size()+2 == budget_bytes) break;
                         dict.push_back(text[i + j]);
                     }
                 }
