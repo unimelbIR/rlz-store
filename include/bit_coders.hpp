@@ -99,6 +99,7 @@ struct vbyte {
 template <uint8_t t_width>
 struct fixed {
 public:
+    enum { width = t_width };
     static std::string type()
     {
         return "u" + std::to_string(t_width);

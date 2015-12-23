@@ -20,7 +20,8 @@ void output_offset_stats(t_idx& idx, std::string name)
         auto block_size_data = fdat.first;
         LOG(INFO) << name << ";"
                   << block_id << ";"
-                  << block_size_data.offset_bytes;
+                  << block_size_data.offset_bytes << ";"
+                  << block_size_data.used_subdict;
     }
 }
 
@@ -96,7 +97,7 @@ int main(int argc, const char* argv[])
                                                   factorization_blocksize,
                                                   default_search_local_context,
                                                   factor_selection_strategy,
-                                                  baseline_factor_coder_zlib,
+                                                  p0_coder,
                                                   block_map_type>; 
 
     {
@@ -118,6 +119,16 @@ int main(int argc, const char* argv[])
 
         verify_index(col, rlz_store);
         output_offset_stats(rlz_store,"ZZZ");
+    }
+    {
+        auto rlz_store = rlz_p0::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .build_or_load(col);
+
+        verify_index(col, rlz_store);
+        output_offset_stats(rlz_store,"RLZP0");
     }
 
     return EXIT_SUCCESS;

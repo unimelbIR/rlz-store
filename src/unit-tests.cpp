@@ -325,7 +325,6 @@ TEST(factor_coder, factor_coder_blocked_subdict)
     const uint64_t dict_pointer_width = utils::CLog2<dict_size_bytes>();
     const uint64_t dict_page_size = 16 * dict_segment_size_bytes;
     const uint64_t in_page_offset_width = utils::CLog2<dict_page_size>();
-    const uint64_t page_ptr_width = dict_pointer_width - in_page_offset_width;
     const uint64_t num_pages_in_dict = dict_size_bytes / dict_page_size;
     block_factor_data bfd(factorization_blocksize);
 

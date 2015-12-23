@@ -170,9 +170,12 @@ struct factor_coder_blocked_subdict {
             auto num_pages_in_block = std::distance(page_offsets.begin(),end);
 
             // (3) estimate cost to encode
-            auto compressed_pages_num_size = page_coder.determine_size(page_offsets.data(),num_pages_in_block,t_total_pages);
-            auto uncompressed_pages_num_size = bfd.num_offsets * page_size_log2;
-            if(compressed_pages_num_size < uncompressed_pages_num_size) {
+            auto compressed_pagetable_size = page_coder.determine_size(page_offsets.data(),num_pages_in_block,t_total_pages);
+            auto new_bits_per_offset = sdsl::bits::hi(num_pages_in_block) + 1 + page_size_log2;
+            auto compressed_size = (bfd.num_offsets * new_bits_per_offset) + compressed_pagetable_size;
+            auto uncompressed_size = bfd.num_offsets * offset_coder.width;
+            LOG(INFO) << "subdict_size = " << compressed_size << " regular_size = " << uncompressed_size;
+            if(compressed_size < uncompressed_size) {
                 // (4a) encode page numbers
                 ofs.put_int(num_pages_in_block,16);
                 page_coder.encode(ofs,page_offsets.data(),num_pages_in_block,t_total_pages);
@@ -185,7 +188,6 @@ struct factor_coder_blocked_subdict {
                     bfd.offsets[i] = (new_page_nr << page_size_log2) + in_page_offset;
                 }
                 // (4c) encode new offsets
-                auto new_bits_per_offset = sdsl::bits::hi(num_pages_in_block) + 1 + page_size_log2;
                 for(size_t i=0;i<bfd.num_offsets;i++) {
                     ofs.put_int(bfd.offsets[i],new_bits_per_offset);
                 }
