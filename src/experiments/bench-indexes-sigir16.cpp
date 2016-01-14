@@ -21,6 +21,7 @@ void output_offset_stats(t_idx& idx, std::string name)
         LOG(INFO) << name << ";"
                   << block_id << ";"
                   << block_size_data.offset_bytes << ";"
+                  << block_size_data.subdict_bytes << ";"
                   << block_size_data.used_subdict;
     }
 }
@@ -54,6 +55,7 @@ int main(int argc, const char* argv[])
     LOG(INFO) << "literal_threshold = " << literal_threshold;
     LOG(INFO) << "dict_segment_size_bytes = " << dict_segment_size_bytes;
     LOG(INFO) << "dict_page_size = " << dict_page_size;
+    LOG(INFO) << "log2(dict_page_size) = " << utils::CLog2<dict_page_size>();
     LOG(INFO) << "num_pages_in_dict = " << num_pages_in_dict;
     LOG(INFO) << "dict_pointer_width = " << dict_pointer_width;
     LOG(INFO) << "in_page_offset_width = " << in_page_offset_width;
@@ -62,7 +64,7 @@ int main(int argc, const char* argv[])
 
     // /* define RLZ types */
     const bool default_search_local_context = false;
-    using dict_creation_strategy = dict_uniform_sample_budget<dict_segment_size_bytes>;
+    using dict_creation_strategy = dict_uniform_sample_budget_sep<dict_segment_size_bytes>;
     using dict_pruning_strategy = dict_prune_none;
     using factor_selection_strategy = factor_select_first;
     using block_map_type = block_map_uncompressed;
@@ -90,45 +92,301 @@ int main(int argc, const char* argv[])
                                                   baseline_factor_coder_zlib,
                                                   block_map_type>; 
 
-    using p0_coder = factor_coder_blocked_subdict<literal_threshold,dict_page_size,num_pages_in_dict,coder::fixed<8>, coder::elias_fano, coder::fixed<dict_pointer_width>, coder::vbyte >;                                              
-    using rlz_p0 = rlz_store_static<dict_creation_strategy,
+    using p0pv_coder = factor_coder_blocked_subdict_pv<literal_threshold,
+                                                  dict_page_size,
+                                                  num_pages_in_dict,
+                                                  dict_size_bytes,
+                                                  coder::elias_fano>;    
+
+    using p0zzz_coder = factor_coder_blocked_subdict_zzz<literal_threshold,
+                                                  dict_page_size,
+                                                  num_pages_in_dict,
+                                                  dict_size_bytes,
+                                                  coder::elias_fano>;         
+                                                  
+    using p1pv_coder = factor_coder_blocked_subdict_pv<literal_threshold,
+                                                  dict_page_size,
+                                                  num_pages_in_dict,
+                                                  dict_size_bytes,
+                                                  coder::interpolative>;    
+
+    using p1zzz_coder = factor_coder_blocked_subdict_zzz<literal_threshold,
+                                                  dict_page_size,
+                                                  num_pages_in_dict,
+                                                  dict_size_bytes ,
+                                                  coder::interpolative>;  
+                                                                                       
+    using rlz_p0pv = rlz_store_static<dict_creation_strategy,
                                                   dict_pruning_strategy,
                                                   dict_index_type,
                                                   factorization_blocksize,
                                                   default_search_local_context,
                                                   factor_selection_strategy,
-                                                  p0_coder,
+                                                  p0pv_coder,
                                                   block_map_type>; 
 
+    using rlz_p0zzz = rlz_store_static<dict_creation_strategy,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p0zzz_coder,
+                                                  block_map_type>; 
+    
+    
+    using rlz_p1pv = rlz_store_static<dict_creation_strategy,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1pv_coder,
+                                                  block_map_type>; 
+
+    using rlz_p1zzz = rlz_store_static<dict_creation_strategy,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1zzz_coder,
+                                                  block_map_type>; 
+
+
+    using rlz_p2_pv = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::only_reorder>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1pv_coder,
+                                                  block_map_type>; 
+
+    using rlz_p2_zzz = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::only_reorder>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1zzz_coder,
+                                                  block_map_type>; 
+
+    using rlz_p2p_pv = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::reorder_preferred>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1pv_coder,
+                                                  block_map_type>; 
+
+    using rlz_p2p_zzz = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::reorder_preferred>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1zzz_coder,
+                                                  block_map_type>; 
+                                                  
+    using rlz_p2pp_pv = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::reorder_preferred_hapax>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1pv_coder,
+                                                  block_map_type>; 
+
+    using rlz_p2pp_zzz = rlz_store_static<dict_segment_score<dict_segment_size_bytes,dict_page_size,remap_mode_t::reorder_preferred_hapax>,
+                                                  dict_pruning_strategy,
+                                                  dict_index_type,
+                                                  factorization_blocksize,
+                                                  default_search_local_context,
+                                                  factor_selection_strategy,
+                                                  p1zzz_coder,
+                                                  block_map_type>; 
+
+    // {
+    //     auto rlz_store = baseline_type_zlib::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZ-ZZZ");
+    // }
+    // {
+    //     auto rlz_store = baseline_type_packed::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZ-PV");
+    // }
+    // {
+    //     auto rlz_store = rlz_p0pv::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZP0-PV");
+    // }
+    // {
+    //     auto rlz_store = rlz_p1pv::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZP1-PV");
+    // }
+
+    // {
+    //     auto rlz_store = rlz_p0zzz::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZP0-ZZZ");
+    // }
+    // {
+    //     auto rlz_store = rlz_p1zzz::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZP1-ZZZ");
+    // }
+
+    // {
+    //     auto baseline_rlz_store = baseline_type_packed::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .build_or_load(col);
+        
+    //     auto rlz_store = rlz_p2pv::builder{}
+    //                          .set_rebuild(args.rebuild)
+    //                          .set_threads(args.threads)
+    //                          .set_dict_size(dict_size_bytes)
+    //                          .remap_dict_apriori(baseline_rlz_store,col);
+                             
+    //     verify_index(col, rlz_store);
+    //     output_offset_stats(rlz_store,"RLZP2-PV");
+    // }
+
+
     {
-        auto rlz_store = baseline_type_packed::builder{}
+        auto baseline_rlz_store = baseline_type_packed::builder{}
                              .set_rebuild(args.rebuild)
                              .set_threads(args.threads)
                              .set_dict_size(dict_size_bytes)
                              .build_or_load(col);
-
+        
+        auto rlz_store = rlz_p2_pv::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
         verify_index(col, rlz_store);
-        output_offset_stats(rlz_store,"PACKED_BINARY_INTEGERS");
+        output_offset_stats(rlz_store,"RLZP2-PV");
     }
+
     {
-        auto rlz_store = baseline_type_zlib::builder{}
+        auto baseline_rlz_store = baseline_type_packed::builder{}
                              .set_rebuild(args.rebuild)
                              .set_threads(args.threads)
                              .set_dict_size(dict_size_bytes)
                              .build_or_load(col);
-
+        
+        auto rlz_store = rlz_p2_zzz::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
         verify_index(col, rlz_store);
-        output_offset_stats(rlz_store,"ZZZ");
+        output_offset_stats(rlz_store,"RLZP2-ZZZ");
     }
+
     {
-        auto rlz_store = rlz_p0::builder{}
+        auto baseline_rlz_store = baseline_type_packed::builder{}
                              .set_rebuild(args.rebuild)
                              .set_threads(args.threads)
                              .set_dict_size(dict_size_bytes)
                              .build_or_load(col);
-
+        
+        auto rlz_store = rlz_p2p_pv::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
         verify_index(col, rlz_store);
-        output_offset_stats(rlz_store,"RLZP0");
+        output_offset_stats(rlz_store,"RLZP2P-PV");
+    }
+    
+    {
+        auto baseline_rlz_store = baseline_type_packed::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .build_or_load(col);
+        
+        auto rlz_store = rlz_p2p_zzz::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
+        verify_index(col, rlz_store);
+        output_offset_stats(rlz_store,"RLZP2P-ZZZ");
+    }
+    
+    {
+        auto baseline_rlz_store = baseline_type_packed::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .build_or_load(col);
+        
+        auto rlz_store = rlz_p2pp_pv::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
+        verify_index(col, rlz_store);
+        output_offset_stats(rlz_store,"RLZP2PP-PV");
+    }
+    
+    
+    {
+        auto baseline_rlz_store = baseline_type_packed::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .build_or_load(col);
+        
+        auto rlz_store = rlz_p2pp_zzz::builder{}
+                             .set_rebuild(args.rebuild)
+                             .set_threads(args.threads)
+                             .set_dict_size(dict_size_bytes)
+                             .remap_dict_apriori(baseline_rlz_store,col);
+                             
+        verify_index(col, rlz_store);
+        output_offset_stats(rlz_store,"RLZP2PP-ZZZ");
     }
 
     return EXIT_SUCCESS;

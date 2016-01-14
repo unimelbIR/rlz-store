@@ -15,12 +15,6 @@ struct factor_itr_csa {
     uint64_t block_len;
     uint64_t sp;
     uint64_t ep;
-    uint64_t sp_1;
-    uint64_t ep_1;
-    uint64_t sp_2;
-    uint64_t ep_2;
-    uint64_t sp_3;
-    uint64_t ep_3;
     uint64_t len;
     uint64_t local_offset;
     uint8_t sym;
@@ -125,7 +119,6 @@ struct factor_itr_csa {
     {
         sp = 0;
         ep = sa.size() - 1;
-        ep_3 = sp_3 = ep_2 = sp_2 = ep_1 = sp_1 = 0;
         while (itr != end) {
             sym = *itr;
             auto mapped_sym = sa.char2comp[sym];
@@ -152,12 +145,6 @@ struct factor_itr_csa {
                 factor_start = itr;
                 return;
             } else { // found substring
-                sp_3 = sp_2;
-                ep_3 = ep_2;
-                sp_2 = sp_1;
-                ep_2 = ep_1;
-                sp_1 = sp;
-                ep_1 = ep;
                 sp = res_sp;
                 ep = res_ep;
                 ++itr;
@@ -346,5 +333,9 @@ struct dict_index_csa {
             return sa[min];
         }
         return sa[sp];
+    }
+    
+    uint64_t translate_offset(uint64_t i,uint64_t factor_len) {
+        return sa.size() - (sa[i] + factor_len) - 1;
     }
 };

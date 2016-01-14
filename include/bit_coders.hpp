@@ -160,7 +160,7 @@ private:
     mutable z_stream istrm;
     mutable const uint8_t* dict_ptr = nullptr;
     mutable uint32_t dict_size = 0;
-
+    mutable std::vector<uint8_t> tmp_buf;
 public:
     zlib()
     {
@@ -188,6 +188,24 @@ public:
     static std::string type()
     {
         return "zlib-" + std::to_string(t_level);
+    }
+
+    template <class T>
+    inline size_t determine_size(const T* in_buf, size_t n) const
+    {
+        size_t size_in_bits = 0;
+        size_in_bits += 32; // encoding size
+        if(tmp_buf.size() < n*16) tmp_buf.resize(n*16);
+        uint64_t in_size = n * sizeof(T);
+        dstrm.avail_in = in_size;
+        dstrm.avail_out = tmp_buf.size();
+        dstrm.next_in = (uint8_t*)in_buf;
+        dstrm.next_out = tmp_buf.data();
+        deflate(&dstrm, Z_FINISH);
+        deflateReset(&dstrm); // after finish we have to reset
+        uint32_t written_bytes = tmp_buf.size() - dstrm.avail_out;
+        size_in_bits += written_bytes*8;
+        return size_in_bits;
     }
 
     template <class t_bit_ostream, class T>
@@ -629,5 +647,301 @@ public:
         }
     }
 };
+
+
+struct interpolative {
+private:
+    template <class t_bit_ostream>
+    inline void write_center_mid(t_bit_ostream& os, uint64_t val,uint64_t u) const {
+        if(u==1) return;
+        auto b = sdsl::bits::hi(u-1) + 1ULL;
+        auto d = 2ULL*u - (1ULL << b);
+        val = val + (u-d/2);
+        if(val>u) val -= u;
+        uint64_t m = (1ULL << b) - u;
+        if(val<=m) {
+            os.put_int_no_size_check(val-1,b-1);
+        } else {
+            val += m;
+            os.put_int_no_size_check((val-1)>>1,b-1);
+            os.put_int_no_size_check((val-1)&1,1);
+        }
+    }
+    template <class t_bit_istream>
+    inline uint64_t read_center_mid(t_bit_istream& is,uint64_t u) const {
+        auto b = u == 1 ? 0 : sdsl::bits::hi(u-1) + 1ULL;
+        auto d = 2ULL*u - (1ULL << b);
+        uint64_t val = 1;
+        if(u != 1) {
+            uint64_t m = (1ULL << b) - u;
+            val = is.get_int(b-1)+1;
+            if (val>m) {
+                val = (2ULL*val + is.get_int(1)) - m - 1;
+            }
+        }
+        val = val + d/2;
+        if (val>u) val -= u;
+        return val;
+    }
+    
+    template <class t_bit_ostream, class T>
+    inline void encode_interpolative(t_bit_ostream& os, T* in_buf, size_t n, size_t low,size_t high) const {
+        if (n==0) return;
+        size_t h = (n+1) >> 1;
+        size_t n1 = h-1;
+        size_t n2 = n-h;
+        uint64_t v = in_buf[h-1]+1; // we don't encode 0
+        write_center_mid(os,v - low-n1+1,high - n2 - low - n1 + 1);
+        encode_interpolative(os,in_buf,n1,low,v-1);
+        encode_interpolative(os,in_buf+h,n2,v+1,high);
+    }
+
+    template <class t_bit_istream, class T>
+    inline void decode_interpolative(t_bit_istream& is, T* out_buf, size_t n, size_t low,size_t high) const {
+        if (n==0) return;
+        size_t h = (n+1) >> 1;
+        size_t n1 = h-1;
+        size_t n2 = n-h;
+        uint64_t v = low + n1 - 1 + read_center_mid(is,high - n2 - low - n1 + 1);
+        out_buf[h-1] = v-1; // we don't encode 0
+        if(n1) decode_interpolative(is,out_buf,n1,low,v-1);
+        if(n2) decode_interpolative(is,out_buf+h,n2,v+1,high);
+    }
+public:
+    static std::string type()
+    {
+        return "ip";
+    }
+
+    template <class T>
+    inline uint64_t determine_size(T* in_buf, size_t n, size_t u) const
+    {
+        bit_nullstream bns;
+        encode(bns,in_buf,n,u);
+        return bns.tellp();
+    }
+
+
+    template <class t_bit_ostream, class T>
+    inline void encode(t_bit_ostream& os, T* in_buf, size_t n, size_t u) const
+    {
+        os.expand_if_needed(n*(sdsl::bits::hi(u+1)+1));
+        size_t low = 1;
+        size_t high = u+1;
+        encode_interpolative(os,in_buf,n,low,high);
+    }
+
+    template <class t_bit_istream, class T>
+    inline void decode(const t_bit_istream& is, T* out_buf, size_t n, size_t u) const
+    {
+        size_t low = 1;
+        size_t high = u+1;
+        decode_interpolative(is,out_buf,n,low,high);
+    }
+};
+
+template <uint8_t t_level = 6>
+struct zlibt {
+public:
+    static const uint32_t mem_level = 9;
+    static const uint32_t window_bits = 15;
+
+private:
+    mutable z_stream dstrm;
+    mutable z_stream istrm;
+    mutable const uint8_t* dict_ptr = nullptr;
+    mutable uint32_t dict_size = 0;
+    mutable std::vector<uint8_t> tbuf;
+public:
+    zlibt()
+    {
+        dstrm.zalloc = Z_NULL;
+        dstrm.zfree = Z_NULL;
+        dstrm.opaque = Z_NULL;
+        deflateInit2(&dstrm,
+                     t_level,
+                     Z_DEFLATED,
+                     window_bits,
+                     mem_level,
+                     Z_DEFAULT_STRATEGY);
+        istrm.zalloc = Z_NULL;
+        istrm.zfree = Z_NULL;
+        istrm.opaque = Z_NULL;
+        inflateInit2(&istrm, window_bits);
+    }
+    ~zlibt()
+    {
+        deflateEnd(&dstrm);
+        inflateEnd(&istrm);
+    }
+
+public:
+    static std::string type()
+    {
+        return "zlibt-" + std::to_string(t_level);
+    }
+
+    template <class t_bit_ostream, class T>
+    inline void encode(t_bit_ostream& os, const T* in_buf, size_t n) const
+    {
+        uint64_t bits_required = 32 + n * 128; // upper bound
+        os.expand_if_needed(bits_required);
+        os.align8(); // align to bytes if needed
+        
+        /* transpose data */
+        const uint8_t* in_buf8 = (const uint8_t*) in_buf;
+        if(tbuf.size() < n*sizeof(T)) tbuf.resize(n*sizeof(T));
+        for(size_t i=0;i<n;i++) {
+            size_t nbytes = sizeof(T);
+            for(size_t j=0;j<nbytes;j++) {
+                tbuf[j*n+i] = in_buf8[i*nbytes+j];
+            }
+        }
+
+        /* space for writing the encoding size */
+        uint32_t* out_size = (uint32_t*)os.cur_data8();
+        os.skip(32);
+
+        /* encode */
+        uint8_t* out_buf = os.cur_data8();
+        uint64_t in_size = n * sizeof(T);
+
+        uint32_t out_buf_bytes = bits_required >> 3;
+
+        dstrm.avail_in = in_size;
+        dstrm.avail_out = out_buf_bytes;
+        dstrm.next_in = (uint8_t*)tbuf.data();
+        dstrm.next_out = out_buf;
+
+        auto error = deflate(&dstrm, Z_FINISH);
+        deflateReset(&dstrm); // after finish we have to reset
+
+        /* If the parameter flush is set to Z_FINISH, pending input
+         is processed, pending output is flushed and deflate returns
+         with Z_STREAM_END if there was enough output space; if 
+         deflate returns with Z_OK, this function must be called
+         again with Z_FINISH and more output spac */
+        if (error != Z_STREAM_END) {
+            switch (error) {
+            case Z_MEM_ERROR:
+                LOG(FATAL) << "zlib-encode: Memory error!";
+                break;
+            case Z_BUF_ERROR:
+                LOG(FATAL) << "zlib-encode: Buffer error!";
+                break;
+            case Z_OK:
+                LOG(FATAL) << "zlib-encode: need to call deflate again!";
+                break;
+            case Z_DATA_ERROR:
+                LOG(FATAL) << "zlib-encode: Invalid or incomplete deflate data!";
+                break;
+            default:
+                LOG(FATAL) << "zlib-encode: Unknown error: " << error;
+                break;
+            }
+        }
+        if (dstrm.avail_in != 0) {
+            LOG(FATAL) << "zlib-encode: not everything was encoded!";
+        }
+        // write the len. assume it fits in 32bits
+        uint32_t written_bytes = out_buf_bytes - dstrm.avail_out;
+        *out_size = (uint32_t)written_bytes;
+        os.skip(written_bytes * 8); // skip over the written content
+    }
+    template <class t_bit_istream, class T>
+    inline void decode(const t_bit_istream& is, T* out_buf, size_t n) const
+    {
+        is.align8(); // align to bytes if needed
+
+        /* read the encoding size */
+        uint32_t* pin_size = (uint32_t*)is.cur_data8();
+        uint32_t in_size = *pin_size;
+        is.skip(32);
+
+        /* decode */
+        auto in_buf = is.cur_data8();
+        uint64_t out_size = n * sizeof(T);
+        if(tbuf.size() < out_size) tbuf.resize(out_size);
+
+        istrm.avail_in = in_size;
+        istrm.next_in = (uint8_t*)in_buf;
+        istrm.avail_out = out_size;
+        istrm.next_out = (uint8_t*)tbuf.data();
+        auto error = inflate(&istrm, Z_FINISH);
+        if (error == Z_NEED_DICT) {
+            auto sdret = inflateSetDictionary(&istrm, dict_ptr, dict_size);
+            if (sdret != Z_OK) {
+                LOG(FATAL) << "zlib-decode: set dictionary error:" << sdret;
+            }
+            error = inflate(&istrm, Z_FINISH);
+        }
+        inflateReset(&istrm); // after finish we need to reset
+        if (error != Z_STREAM_END) {
+            switch (error) {
+            case Z_MEM_ERROR:
+                LOG(FATAL) << "zlib-decode: Memory error!";
+                break;
+            case Z_BUF_ERROR:
+                LOG(FATAL) << "zlib-decode: Buffer error!";
+                break;
+            case Z_DATA_ERROR:
+                LOG(FATAL) << "zlib-decode: Data error!";
+                break;
+            case Z_STREAM_END:
+                LOG(FATAL) << "zlib-decode: Stream end error!";
+                break;
+            case Z_NEED_DICT:
+                LOG(FATAL) << "zlib-decode: NEED DICT!";
+                break;
+            default:
+                LOG(FATAL) << "zlib-decode: Unknown error: " << error;
+                break;
+            }
+        }
+        
+        /* transpose */
+        uint8_t* out_buf8 = (uint8_t*)out_buf;
+        for(size_t i=0;i<n;i++) {
+            size_t nbytes = sizeof(T);
+            for(size_t j=0;j<nbytes;j++) {
+                out_buf8[i*nbytes+j] = tbuf[j*n+i];
+            }
+        }
+
+        is.skip(in_size * 8); // skip over the read content
+    }
+};
+
+
+struct minbin {
+private:
+public:
+    static std::string type()
+    {
+        return "minbin";
+    }
+
+    template <class T>
+    inline uint64_t determine_size(T* in_buf, size_t n, size_t u) const
+    {
+        bit_nullstream bns;
+        encode(bns,in_buf,n,u);
+        return bns.tellp();
+    }
+
+    template <class t_bit_ostream, class T>
+    inline void encode(t_bit_ostream& os, T* in_buf, size_t n, size_t max) const
+    {
+        os.expand_if_needed(n*(sdsl::bits::hi(max+1)+1));
+        for(size_t i=0;i<n;i++) os.put_minbin_int(in_buf[i],max);
+    }
+
+    template <class t_bit_istream, class T>
+    inline void decode(const t_bit_istream& is, T* out_buf, size_t n, size_t max) const
+    {
+        for(size_t i=0;i<n;i++) out_buf[i] = is.get_minbin_int(max);
+    }
+};
+
 
 }

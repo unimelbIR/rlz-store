@@ -89,7 +89,9 @@ bool verify_index(collection& col, t_idx& idx)
 {
     LOG(INFO) << "Verify that factorization is correct.";
     sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
-    auto num_blocks = text.size() / t_idx::block_size;
+    auto text_size = text.size();
+    //uint64_t text_size = 1024*1024*5;
+    auto num_blocks = text_size / t_idx::block_size;
 
     bool error = false;
     for (size_t i = 0; i < num_blocks; i++) {

@@ -110,6 +110,8 @@ void
                 while (itr != resp_end) {
                     if (*itr == 0)
                         out.push_back(0xFE);
+                    else if (*itr == 1)
+                        out.push_back(0xFF);
                     else
                         out.push_back(*itr);
                     ++itr;
@@ -131,6 +133,8 @@ void
                 while (itr != resp_end) {
                     if (*itr == 0)
                         out.push_back(0xFE);
+                    else if (*itr == 1)
+                        out.push_back(0xFF);
                     else
                         out.push_back(*itr);
                     ++itr;

@@ -3,6 +3,8 @@
 struct block_factor_data {
     std::vector<uint8_t> literals;
     std::vector<uint32_t> offsets;
+    std::vector<uint32_t> sp;
+    std::vector<uint32_t> ep;
     std::vector<uint32_t> lengths;
     std::vector<uint32_t> offset_literals; // combined offsets and literals for two-stream decoding
     size_t num_factors;
@@ -31,12 +33,14 @@ struct block_factor_data {
     {
         literals.resize(block_size);
         offsets.resize(block_size);
+        sp.resize(block_size);
+        ep.resize(block_size);
         lengths.resize(block_size);
         offset_literals.resize(block_size);
     }
 
     template <class t_coder, class t_itr>
-    void add_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len)
+    void add_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t _sp, uint32_t _ep)
     {
         assert(len > 0); // we define len to be larger than 0 even for unknown syms.
         if (len <= coder.literal_threshold) {
@@ -54,6 +58,8 @@ struct block_factor_data {
             num_offset_literals += len;
         } else {
             offsets[num_offsets] = offset;
+            sp[num_offsets] = _sp;
+            ep[num_offsets] = _ep;
             num_offsets++;
             last_factor_was_literal = false;
             lengths[num_factors++] = len;

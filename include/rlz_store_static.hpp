@@ -37,6 +37,7 @@ public:
 
 private:
     sdsl::int_vector_mapper<1, std::ios_base::in> m_factored_text;
+    sdsl::int_vector_mapper<32, std::ios_base::in> m_spep;
     bit_istream<sdsl::int_vector_mapper<1, std::ios_base::in> > m_factor_stream;
     sdsl::int_vector<8> m_dict;
     block_map_type m_blockmap;
@@ -71,13 +72,14 @@ public:
     rlz_store_static& operator=(rlz_store_static&&) = default;
     rlz_store_static(collection& col)
         : m_factored_text(col.file_map[KEY_FACTORIZED_TEXT])
+        , m_spep(col.file_map[KEY_SPEP])
         , m_factor_stream(m_factored_text) // (1) mmap factored text
     {
         LOG(INFO) << "Loading RLZ store into memory";
         m_factor_file = col.file_map[KEY_FACTORIZED_TEXT];
         // (2) load the block map
         LOG(INFO) << "\tLoad block map";
-        sdsl::load_from_file(m_blockmap, col.file_map[KEY_BLOCKMAP]);
+        m_blockmap = block_map_type(col);
 
         // (3) load dictionary from disk
         LOG(INFO) << "\tLoad dictionary";
@@ -123,18 +125,20 @@ public:
     }
 
     inline coder_size_info decode_factors(size_t offset,
+                               size_t spep_offset,
                                block_factor_data& bfd,
                                size_t num_factors) const
     {
         m_factor_stream.seek(offset);
-        return m_factor_coder.decode_block(m_factor_stream, bfd, num_factors);
+        return m_factor_coder.decode_block(m_factor_stream,m_spep,spep_offset, bfd, num_factors);
     }
 
     inline uint64_t decode_block(uint64_t block_id, std::vector<uint8_t>& text, block_factor_data& bfd) const
     {
         auto block_start = m_blockmap.block_offset(block_id);
         auto num_factors = m_blockmap.block_factors(block_id);
-        decode_factors(block_start, bfd, num_factors);
+        auto spep_start = m_blockmap.block_spep(block_id);
+        decode_factors(block_start,spep_start,bfd, num_factors);
 
         auto out_itr = text.begin();
         size_t literals_used = 0;

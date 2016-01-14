@@ -7,6 +7,7 @@ struct block_map_uncompressed {
     typedef typename sdsl::int_vector<>::size_type size_type;
     sdsl::int_vector<> m_block_offsets;
     sdsl::int_vector<> m_block_factors;
+    sdsl::int_vector<> m_block_spep;
 
     static std::string type()
     {
@@ -15,16 +16,18 @@ struct block_map_uncompressed {
 
     block_map_uncompressed() = default;
     block_map_uncompressed(block_map_uncompressed&&) = default;
+    block_map_uncompressed(block_map_uncompressed&) = default;
+    block_map_uncompressed& operator=(const block_map_uncompressed&) = default;
+    block_map_uncompressed& operator=(block_map_uncompressed&&) = default;
 
     block_map_uncompressed(collection& col)
     {
         LOG(INFO) << "\tLoad block offsets from file";
         sdsl::load_from_file(m_block_offsets, col.file_map[KEY_BLOCKOFFSETS]);
-        if (col.file_map.find(KEY_BLOCKFACTORS) != col.file_map.end()) {
+        if(utils::file_exists(col.file_map[KEY_BLOCKFACTORS])) 
             sdsl::load_from_file(m_block_factors, col.file_map[KEY_BLOCKFACTORS]);
-            sdsl::util::bit_compress(m_block_factors);
-        }
-        sdsl::util::bit_compress(m_block_offsets);
+        if(utils::file_exists(col.file_map[KEY_BLOCKSPEP])) 
+            sdsl::load_from_file(m_block_spep, col.file_map[KEY_BLOCKSPEP]);
     }
 
     inline size_type serialize(std::ostream& out, sdsl::structure_tree_node* v = NULL, std::string name = "") const
@@ -43,19 +46,19 @@ struct block_map_uncompressed {
         return sdsl::size_in_bytes(*this);
     }
 
-    inline void load(std::istream& in)
-    {
-        m_block_offsets.load(in);
-        m_block_factors.load(in);
-    }
-
     inline size_type block_offset(size_t block_id) const
     {
         return m_block_offsets[block_id];
     }
+    
     inline size_type block_factors(size_t block_id) const
     {
         return m_block_factors[block_id];
+    }
+    
+    inline size_type block_spep(size_t block_id) const
+    {
+        return m_block_spep[block_id];
     }
 
     inline size_type num_blocks() const

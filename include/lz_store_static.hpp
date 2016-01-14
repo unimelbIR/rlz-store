@@ -63,7 +63,8 @@ public:
         LOG(INFO) << "Loading Zlib store into memory (" << type() << ")";
         // (2) load the block map
         LOG(INFO) << "\tLoad block map";
-        sdsl::load_from_file(m_blockmap, col.file_map[KEY_BLOCKMAP]);
+        m_blockmap = block_map_type(col);
+        
         // (3) load dictionary from disk
         if (col.file_map.count(KEY_DICT) != 0) {
             LOG(INFO) << "\tLoad dictionary";
@@ -165,12 +166,6 @@ public:
         return *this;
     };
 
-    static std::string blockmap_file_name(collection& col)
-    {
-        return col.path + "/index/" + KEY_BLOCKMAP + "-" + base_type::type() + "-"
-               + block_map_type::type() + "-" + col.param_map[PARAM_DICT_HASH] + ".sdsl";
-    }
-
     static std::string blockoffsets_file_name(collection& col)
     {
         return col.path + "/tmp/" + KEY_BLOCKOFFSETS + "-" + base_type::type()
@@ -257,15 +252,6 @@ public:
         col.file_map[KEY_LZ] = lz_file_name;
         col.file_map[KEY_BLOCKOFFSETS] = bo_file_name;
 
-        // (4) encode document start pos
-        LOG(INFO) << "Create block map (" << block_map_type::type() << ")";
-        auto blockmap_file = blockmap_file_name(col);
-        if (rebuild || !utils::file_exists(blockmap_file)) {
-            block_map_type tmp(col);
-            sdsl::store_to_file(tmp, blockmap_file);
-        }
-        col.file_map[KEY_BLOCKMAP] = blockmap_file;
-
         auto stop = hrclock::now();
         LOG(INFO) << "LZ construction complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
 
@@ -290,14 +276,6 @@ public:
         } else {
             col.file_map[KEY_LZ] = enc_file_name;
             col.file_map[KEY_BLOCKOFFSETS] = blockoffsets_file_name(col);
-        }
-
-        /* (2) check blockmap */
-        auto blockmap_file = blockmap_file_name(col);
-        if (!utils::file_exists(blockmap_file)) {
-            throw std::runtime_error("LOAD FAILED: Cannot find blockmap.");
-        } else {
-            col.file_map[KEY_BLOCKMAP] = blockmap_file;
         }
 
         /* load */

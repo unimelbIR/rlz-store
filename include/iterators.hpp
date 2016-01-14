@@ -6,6 +6,8 @@ struct factor_data {
     bool is_literal;
     uint8_t* literal_ptr;
     uint64_t offset;
+    uint64_t sp;
+    uint64_t ep;
     uint64_t len;
 };
 
@@ -23,8 +25,6 @@ private:
     size_t m_in_block_literals_offset;
     size_t m_in_block_offsets_offset;
     block_factor_data m_block_factor_data;
-    std::vector<uint32_t> m_offset_buf;
-    std::vector<uint32_t> m_len_buf;
 public:
     const size_t& block_id = m_block_offset;
     coder_size_info cur_block_size_info;
@@ -42,7 +42,8 @@ public:
         if (m_block_offset < m_idx.block_map.num_blocks()) {
             m_factors_in_cur_block = m_idx.block_map.block_factors(m_block_offset);
             auto block_file_offset = m_idx.block_map.block_offset(m_block_offset);
-            cur_block_size_info = m_idx.decode_factors(block_file_offset, m_block_factor_data, m_factors_in_cur_block);
+            auto block_spep_offset = m_idx.block_map.block_spep(m_block_offset);
+            cur_block_size_info = m_idx.decode_factors(block_file_offset,block_spep_offset, m_block_factor_data, m_factors_in_cur_block);
             m_in_block_literals_offset = 0;
             m_in_block_offsets_offset = 0;
         }
@@ -62,6 +63,8 @@ public:
         } else {
             fd.is_literal = false;
             fd.offset = m_block_factor_data.offsets[m_in_block_offsets_offset];
+            fd.sp = m_block_factor_data.sp[m_in_block_offsets_offset];
+            fd.ep = m_block_factor_data.ep[m_in_block_offsets_offset];
             m_in_block_offsets_offset++;
         }
         return fd;
@@ -73,6 +76,9 @@ public:
     bool operator!=(const factor_iterator& b) const
     {
         return m_block_offset != b.m_block_offset || m_factor_offset != b.m_factor_offset;
+    }
+    bool last_factor_in_block() const {
+        return m_factor_offset + 1 == m_factors_in_cur_block;
     }
     factor_iterator& operator++()
     {

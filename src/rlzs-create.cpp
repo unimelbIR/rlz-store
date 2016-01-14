@@ -21,28 +21,12 @@ int main(int argc, const char* argv[])
     LOG(INFO) << "Parsing collection directory " << args.collection_dir;
     collection col(args.collection_dir);
 
-    /* create rlz index */
-    const uint32_t factorization_blocksize = 64 * 1024;
-    {
-        auto rlz_store = typename rlz_type_u32v_greedy_sp<factorization_blocksize,false>::builder{}
-                             .set_rebuild(args.rebuild)
-                             .set_threads(args.threads)
-                             .set_dict_size(args.dict_size_in_bytes)
-                             .build_or_load(col);
-
-        verify_index(col, rlz_store);
-        output_stats(rlz_store,"global");
+    sdsl::int_vector<8> text;
+    sdsl::load_from_file(text,col.file_map[KEY_TEXT]);
+    for(size_t i=0;i<text.size();i++) {
+        if(text[i]==1) text[i] = 0xFF;        
     }
-    {
-        auto rlz_store = typename rlz_type_u32v_greedy_sp<factorization_blocksize,true>::builder{}
-                             .set_rebuild(args.rebuild)
-                             .set_threads(args.threads)
-                             .set_dict_size(args.dict_size_in_bytes)
-                             .build_or_load(col);
-
-        verify_index(col, rlz_store);
-        output_stats(rlz_store,"global+local");
-    }
+    sdsl::store_to_file(text,col.file_map[KEY_TEXT]);
 
     return EXIT_SUCCESS;
 }

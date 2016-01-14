@@ -7,6 +7,9 @@
 #include "dict_local_weighted_coverage_random_CMS.hpp"
 #include "dict_local_weighted_coverage_random_CMS_topk.hpp"
 #include "dict_local_coverage_norms.hpp"
+#include "dict_reorder.hpp"
+#include "dict_uniform_sample_budget_sep.hpp"
+#include "dict_segment_score.hpp"
 
 #include "dict_prune_rem.hpp"
 #include "dict_prune_care.hpp"

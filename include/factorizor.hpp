@@ -12,14 +12,6 @@
 #include <cctype>
 #include <future>
 
-struct spep_stats {
-    uint64_t total = 0;
-    std::unordered_map<uint64_t,uint64_t> zero;
-    std::unordered_map<uint64_t,uint64_t> one;
-    std::unordered_map<uint64_t,uint64_t> two;
-    std::unordered_map<uint64_t,uint64_t> three;
-};
-
 template <uint32_t t_block_size,
           bool t_search_local_block_context,
           class t_index,
@@ -49,44 +41,37 @@ struct factorizor {
         return col.path + "/index/" + KEY_BLOCKFACTORS + "-fs=" + type() + "-dhash=" + dict_hash + ".sdsl";
     }
 
+    static std::string bspep_file_name(collection& col)
+    {
+        auto dict_hash = col.param_map[PARAM_DICT_HASH];
+        return col.path + "/index/" + KEY_BLOCKSPEP + "-fs=" + type() + "-dhash=" + dict_hash + ".sdsl";
+    }
+
+    static std::string spep_file_name(collection& col)
+    {
+        auto dict_hash = col.param_map[PARAM_DICT_HASH];
+        return col.path + "/index/" + KEY_SPEP + "-fs=" + type() + "-dhash=" + dict_hash + ".sdsl";
+    }
+
     template <class t_factor_store, class t_itr>
-    static void factorize_block(t_factor_store& fs, t_coder& coder, const t_index& idx, t_itr itr, t_itr end,spep_stats& s)
+    static void factorize_block(t_factor_store& fs, t_coder& coder, const t_index& idx, t_itr itr, t_itr end)
     {
         // utils::rlz_timer<std::chrono::milliseconds> fbt("factorize_block");
         uint64_t encoding_block_size = std::distance(itr,end);
         auto factor_itr = idx.factorize<decltype(itr),t_search_local_block_context>(itr, end);
         fs.start_new_block();
         size_t syms_encoded = 0;
-        double local = 0;
-        double global = 0;
-        double factors = 0;
         while (!factor_itr.finished()) {
             if (factor_itr.len == 0) {
-                fs.add_to_block_factor(coder, itr + syms_encoded, 0, 1);
+                fs.add_to_block_factor(coder, itr + syms_encoded, 0, 1,0,0);
                 syms_encoded++;
             } else {
                 auto offset = t_factor_selector::template pick_offset<>(idx, factor_itr,t_search_local_block_context,encoding_block_size);
-                if(offset < encoding_block_size) {
-                    local++;
-                    // LOG(INFO) << "L <" << offset << "," << factor_itr.len << ">";
-                } else {
-                    global++;
-                    // LOG(INFO) << "G <" << offset << "," << factor_itr.len << ">";
-                }
-                fs.add_to_block_factor(coder, itr + syms_encoded, offset, factor_itr.len);
+                fs.add_to_block_factor(coder, itr + syms_encoded, offset, factor_itr.len,factor_itr.sp,factor_itr.ep);
                 syms_encoded += factor_itr.len;
-                if(factor_itr.len > 3) {
-                    s.total++;
-                    s.zero[factor_itr.ep-factor_itr.sp+1]++;
-                    s.one[factor_itr.ep_1-factor_itr.sp_1+1]++;
-                    s.two[factor_itr.ep_2-factor_itr.sp_2+1]++;
-                    s.three[factor_itr.ep_3-factor_itr.sp_3+1]++;
-                }
             }
-            factors++;
             ++factor_itr;
         }
-        //LOG(INFO) << "local = " << local << " global = " << global << " local / (local+global) = " << 100.0*local/factors;
         fs.encode_current_block(coder);
     }
 
@@ -104,8 +89,6 @@ struct factorizor {
         /* (2) create encoder  */
         t_coder coder;
 
-        spep_stats s;
-
         /* (3) compute text stats */
         auto block_size = t_block_size;
         size_t n = std::distance(itr, end);
@@ -117,7 +100,7 @@ struct factorizor {
         for (size_t i = 1; i <= num_blocks; i++) {
             auto block_end = itr + block_size;
             // LOG(INFO) << "block " << i;
-            factorize_block(fs, coder, idx, itr, block_end,s);
+            factorize_block(fs, coder, idx, itr, block_end);
             itr = block_end;
             block_end += block_size;
             if (i % blocks_per_10mib == 0) {
@@ -127,20 +110,7 @@ struct factorizor {
 
         /* (5) is there a non-full block? */
         if (left != 0) {
-            factorize_block(fs, coder, idx, itr, end,s);
-        }
-
-        for(auto& kv : s.zero) {
-            LOG(INFO) << kv.first << ";0;"  << kv.second << ";" << s.total;
-        }
-        for(auto& kv : s.one) {
-            LOG(INFO) << kv.first << ";1;" << kv.second << ";" << s.total;
-        }
-        for(auto& kv : s.two) {
-            LOG(INFO) << kv.first << ";2;" << kv.second << ";" << s.total;
-        }
-        for(auto& kv : s.three) {
-            LOG(INFO) << kv.first << ";3;" << kv.second << ";" << s.total;
+            factorize_block(fs, coder, idx, itr, end);
         }
 
         return fs.result();

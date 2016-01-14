@@ -10,8 +10,10 @@ struct factorization_info {
     uint64_t total_encoded_factors;
     uint64_t total_encoded_blocks;
     std::string factored_text_filename;
+    std::string spep_filename;
     std::string block_offset_filename;
     std::string block_factors_filename;
+    std::string block_spep_filename;
     bool operator<(const factorization_info& fi) const
     {
         return offset < fi.offset;
@@ -146,15 +148,19 @@ struct factor_storage {
     hrclock::time_point encoding_start;
     block_factor_data tmp_block_factor_data;
     sdsl::int_vector_mapper<1> factored_text;
+    sdsl::int_vector_mapper<32> spep;
     sdsl::int_vector_mapper<0> block_offsets;
     sdsl::int_vector_mapper<0> block_factors;
+    sdsl::int_vector_mapper<0> block_spep;
     bit_ostream<sdsl::int_vector_mapper<1> > factor_stream;
     factor_storage(collection& col, size_t _block_size, size_t _offset)
         : toffset(_offset)
         , block_size(_block_size)
         , factored_text(sdsl::write_out_buffer<1>::create(col.temp_file_name(KEY_FACTORIZED_TEXT, toffset)))
+        , spep(sdsl::write_out_buffer<32>::create(col.temp_file_name(KEY_SPEP, toffset)))
         , block_offsets(sdsl::write_out_buffer<0>::create(col.temp_file_name(KEY_BLOCKOFFSETS, toffset)))
         , block_factors(sdsl::write_out_buffer<0>::create(col.temp_file_name(KEY_BLOCKFACTORS, toffset)))
+        , block_spep(sdsl::write_out_buffer<0>::create(col.temp_file_name(KEY_BLOCKSPEP, toffset)))
         , factor_stream(factored_text)
     {
         // create a buffer we can write to without reallocating
@@ -163,9 +169,9 @@ struct factor_storage {
         encoding_start = hrclock::now();
     }
     template <class t_coder, class t_itr>
-    void add_to_block_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len)
+    void add_to_block_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t sp, uint32_t ep)
     {
-        tmp_block_factor_data.add_factor(coder, text_itr, offset, len);
+        tmp_block_factor_data.add_factor(coder, text_itr, offset, len,sp,ep);
     }
     void start_new_block()
     {
@@ -176,9 +182,10 @@ struct factor_storage {
     {
         block_offsets.push_back(factor_stream.tellp());
         block_factors.push_back(tmp_block_factor_data.num_factors);
+        block_spep.push_back(spep.size());
         total_encoded_factors += tmp_block_factor_data.num_factors;
         total_encoded_blocks++;
-        coder.encode_block(factor_stream, tmp_block_factor_data);
+        coder.encode_block(factor_stream,spep, tmp_block_factor_data);
     }
     void output_stats(size_t total_blocks) const
     {
@@ -203,8 +210,10 @@ struct factor_storage {
         fi.total_encoded_factors = total_encoded_factors;
         fi.total_encoded_blocks = total_encoded_blocks;
         fi.factored_text_filename = factored_text.file_name();
+        fi.spep_filename = spep.file_name();
         fi.block_offset_filename = block_offsets.file_name();
         fi.block_factors_filename = block_factors.file_name();
+        fi.block_spep_filename = block_spep.file_name();
         return fi;
     }
 };
@@ -253,23 +262,30 @@ merge_factor_encodings(collection& col, std::vector<factorization_info>& efs)
 {
     auto dict_hash = col.param_map[PARAM_DICT_HASH];
     auto factor_file_name = t_fact_strategy::factor_file_name(col);
+    auto spep_file_name = t_fact_strategy::spep_file_name(col);
     auto boffsets_file_name = t_fact_strategy::boffsets_file_name(col);
     auto bfactors_file_name = t_fact_strategy::bfactors_file_name(col);
+    auto bspep_file_name = t_fact_strategy::bspep_file_name(col);
     // rename the first block to the correct file name
     std::sort(efs.begin(), efs.end());
     LOG(INFO) << "\tRename offset 0 block to output files";
     utils::rename_file(efs[0].factored_text_filename, factor_file_name);
+    utils::rename_file(efs[0].spep_filename, spep_file_name);
     utils::rename_file(efs[0].block_offset_filename, boffsets_file_name);
     utils::rename_file(efs[0].block_factors_filename, bfactors_file_name);
+    utils::rename_file(efs[0].block_spep_filename, bspep_file_name);
     if (efs.size() != 1) { // append the rest and fix the offsets
         sdsl::int_vector_mapper<1> factored_text(factor_file_name);
         bit_ostream<sdsl::int_vector_mapper<1> > factor_stream(factored_text, factored_text.size());
         sdsl::int_vector_mapper<0> block_offsets(boffsets_file_name);
         sdsl::int_vector_mapper<0> block_factors(bfactors_file_name);
+        sdsl::int_vector_mapper<0> block_spep(bspep_file_name);
+        sdsl::int_vector_mapper<32> spep(spep_file_name);
 
         for (size_t i = 1; i < efs.size(); i++) {
-            LOG(INFO) << "\tCopy block " << i << " factors/offsets/counts";
+            LOG(INFO) << "\tCopy block " << i << " factors";
             uint64_t foffset = factor_stream.tellp();
+            uint64_t spepoffset = spep.size();
             {
                 const sdsl::int_vector_mapper<1, std::ios_base::in> block_factor_text(efs[i].factored_text_filename);
                 auto src_bits = block_factor_text.size();
@@ -282,6 +298,14 @@ merge_factor_encodings(collection& col, std::vector<factorization_info>& efs)
                     factor_stream.put(block_factor_text[j]);
                 }
             }
+            LOG(INFO) << "\tCopy block " << i << " spep";
+            {
+                const sdsl::int_vector_mapper<32, std::ios_base::in> chunk_spep(efs[i].spep_filename);
+                for (const auto& se : chunk_spep) {
+                    spep.push_back(se);
+                }
+            }
+            LOG(INFO) << "\tCopy block " << i << " block offsets";
             {
                 // block offsets have to be adjusted to the appended position
                 const sdsl::int_vector_mapper<0, std::ios_base::in> block_block_offsets(efs[i].block_offset_filename);
@@ -289,9 +313,19 @@ merge_factor_encodings(collection& col, std::vector<factorization_info>& efs)
                     block_offsets.push_back(off + foffset);
                 }
             }
-            const sdsl::int_vector_mapper<0, std::ios_base::in> block_block_factors(efs[i].block_factors_filename);
-            for (const auto& nf : block_block_factors) {
-                block_factors.push_back(nf);
+            LOG(INFO) << "\tCopy block " << i << " block factors";
+            {
+                const sdsl::int_vector_mapper<0, std::ios_base::in> block_block_factors(efs[i].block_factors_filename);
+                for (const auto& nf : block_block_factors) {
+                    block_factors.push_back(nf);
+                }
+            }
+            LOG(INFO) << "\tCopy block " << i << " block spep offsets";
+            {
+                const sdsl::int_vector_mapper<0, std::ios_base::in> block_block_spep(efs[i].block_spep_filename);
+                for (const auto& nf : block_block_spep) {
+                    block_spep.push_back(spepoffset + nf);
+                }
             }
         }
         // delete all other files
@@ -300,12 +334,16 @@ merge_factor_encodings(collection& col, std::vector<factorization_info>& efs)
             utils::remove_file(efs[i].factored_text_filename);
             utils::remove_file(efs[i].block_offset_filename);
             utils::remove_file(efs[i].block_factors_filename);
+            utils::remove_file(efs[i].block_spep_filename);
+            utils::remove_file(efs[i].spep_filename);
         }
     }
     // store file names in col map
     col.file_map[KEY_FACTORIZED_TEXT] = factor_file_name;
     col.file_map[KEY_BLOCKOFFSETS] = boffsets_file_name;
     col.file_map[KEY_BLOCKFACTORS] = bfactors_file_name;
+    col.file_map[KEY_BLOCKSPEP] = bspep_file_name;
+    col.file_map[KEY_SPEP] = spep_file_name;
 
     factorization_info fi;
     return fi;
