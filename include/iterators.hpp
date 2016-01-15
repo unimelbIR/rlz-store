@@ -8,6 +8,8 @@ struct factor_data {
     uint64_t offset;
     uint64_t sp;
     uint64_t ep;
+    uint64_t sp1;
+    uint64_t ep1;
     uint64_t len;
 };
 
@@ -65,6 +67,8 @@ public:
             fd.offset = m_block_factor_data.offsets[m_in_block_offsets_offset];
             fd.sp = m_block_factor_data.sp[m_in_block_offsets_offset];
             fd.ep = m_block_factor_data.ep[m_in_block_offsets_offset];
+            fd.sp1 = m_block_factor_data.sp1[m_in_block_offsets_offset];
+            fd.ep1 = m_block_factor_data.ep1[m_in_block_offsets_offset];
             m_in_block_offsets_offset++;
         }
         return fd;

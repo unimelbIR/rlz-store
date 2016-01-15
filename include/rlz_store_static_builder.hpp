@@ -320,7 +320,7 @@ private:
                     auto cur_offset = idx.translate_offset(factor.sp, factor.len);
                     auto cur_segment = cur_offset >> segment_size_log2;
                     auto mapped_segment = segment_table[cur_segment];
-                    auto mapped_page = mapped_segment >> page_size_log2;
+                    auto mapped_page = (mapped_segment << segment_size_log2) >> page_size_log2;
                     preferred_pages[mapped_page] = 1;
                 }
             }

@@ -46,8 +46,44 @@ struct factor_coder_blocked {
             for(size_t i=0;i<bfd.num_offsets;i++) {
                 spep_store.push_back(bfd.sp[i]);
                 spep_store.push_back(bfd.ep[i]);
+                spep_store.push_back(bfd.sp1[i]);
+                spep_store.push_back(bfd.ep1[i]);
             }   
         }
+    }
+
+    template <class t_ostream>
+    void encode_block_output(t_ostream& ofs,block_factor_data& bfd,size_t block_id,const char* name) const
+    {
+        size_t total_before = ofs.tellp();       
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + bfd.num_factors, [](uint32_t& n) { n--; });
+        size_t before = ofs.tellp();
+        len_coder.encode(ofs, bfd.lengths.data(), bfd.num_factors);
+        size_t len_size_bytes = (ofs.tellp() - before)/8;
+        
+        before = ofs.tellp();
+        if (bfd.num_literals)
+            literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
+        
+        size_t literal_size_bytes = (ofs.tellp() - before)/8;
+            
+        size_t offsets_before = ofs.tellp();
+        if (bfd.num_offsets) {
+            offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
+        }
+        size_t offset_size_bytes = (ofs.tellp() - offsets_before)/8;
+        size_t total_size_bytes = (ofs.tellp() - total_before)/8;
+        
+        LOG(INFO) << name << ";"
+                  << block_id << ";"
+                  << len_size_bytes << ";"
+                  << literal_size_bytes << ";"
+                  << offset_size_bytes << ";"
+                  << 0 << ";"
+                  << bfd.num_offsets << ";"
+                  << 0 << ";"
+                  << 0 << ";"
+                  << total_size_bytes;
     }
 
     template <class t_istream,class t_vec>
@@ -193,8 +229,113 @@ struct factor_coder_blocked_subdict_zzz {
             for(size_t i=0;i<bfd.num_offsets;i++) {
                 spep_store.push_back(bfd.sp[i]);
                 spep_store.push_back(bfd.ep[i]);
+                spep_store.push_back(bfd.sp1[i]);
+                spep_store.push_back(bfd.ep1[i]);
             }   
         }
+    }
+
+
+    template <class t_ostream>
+    void encode_block_output(t_ostream& ofs,block_factor_data& bfd,size_t block_id,const char* name) const
+    {
+        size_t total_before = ofs.tellp();
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + bfd.num_factors, [](uint32_t& n) { n--; });
+        size_t before = ofs.tellp();
+        len_coder.encode(ofs, bfd.lengths.data(), bfd.num_factors);
+        size_t len_size_bytes = (ofs.tellp() - before)/8;
+        // LOG(INFO) << "encode literals at " << ofs.tellp();
+        
+        before = ofs.tellp();
+        if (bfd.num_literals) {
+            literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
+        }
+        size_t literal_size_bytes = (ofs.tellp() - before)/8;
+        
+        size_t offsets_before = ofs.tellp();
+        size_t page_table_size_bytes = 0;
+        bool use_page_table = false;
+        size_t num_pages_in_block = 0;
+
+        if (bfd.num_offsets) {
+            if(page_offsets.size() < bfd.num_offsets) page_offsets.resize(bfd.num_offsets);
+            // (1) determine page offsets
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                page_offsets[i] = bfd.offsets[i] >> page_size_log2;
+            }
+            // (2) determine unique offsets
+            std::sort(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            auto end = std::unique(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            num_pages_in_block = std::distance(page_offsets.begin(),end);
+
+            // (3) map offsets
+            if(mapped_offsets.size() < bfd.num_offsets) mapped_offsets.resize(bfd.num_offsets);
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                auto page_nr = bfd.offsets[i] >> page_size_log2;
+                auto in_page_offset = bfd.offsets[i]&sdsl::bits::lo_set[page_size_log2];
+                auto new_page_itr = std::lower_bound(page_offsets.begin(),end, page_nr);
+                auto new_page_nr = std::distance(page_offsets.begin(),new_page_itr);
+                mapped_offsets[i] = (new_page_nr << page_size_log2) + in_page_offset;
+            }
+
+            // (4) estimate cost to encode
+            auto compressed_pagetable_size = page_coder.determine_size(page_offsets.data(),num_pages_in_block,t_total_pages);
+            test_mapped_buf_stream.seek(0);
+            offset_coder.encode(test_mapped_buf_stream,mapped_offsets.data(),bfd.num_offsets);
+            auto offset_cost_mapped = test_mapped_buf_stream.tellp();
+            auto compressed_size = offset_cost_mapped + compressed_pagetable_size;
+            test_unmapped_buf_stream.seek(0);
+            offset_coder.encode(test_unmapped_buf_stream,bfd.offsets.data(),bfd.num_offsets);
+            auto uncompressed_size = test_unmapped_buf_stream.tellp();
+            
+            if(compressed_size < uncompressed_size) {
+                // (4a) encode page numbers
+                ofs.put_int(num_pages_in_block,16);
+                // LOG(INFO) << "encode page table at " << ofs.tellp();
+                
+                use_page_table = true;
+                size_t pagetable_before = ofs.tellp();
+                page_coder.encode(ofs,page_offsets.data(),num_pages_in_block,t_total_pages);
+                page_table_size_bytes = (ofs.tellp() - pagetable_before)/8;
+
+                // (4c) write already encoded zlib data
+                ofs.expand_if_needed(offset_cost_mapped+8);
+                ofs.align8(); // align to bytes if needed
+                uint8_t* out_buf8 = (uint8_t*)ofs.cur_data8();
+                test_mapped_buf_stream.seek(0);
+                uint8_t* in_buf8 = (uint8_t*)test_mapped_buf_stream.cur_data8();
+                auto out_bytes = offset_cost_mapped / 8;
+                for(size_t i=0;i<out_bytes;i++) *out_buf8++ = *in_buf8++;
+                ofs.skip(offset_cost_mapped);
+            } else {
+                // regular uncompressed encoding
+                ofs.put_int(0,16);
+                // LOG(INFO) << "encode offsets at " << ofs.tellp();
+                ofs.expand_if_needed(uncompressed_size+8);
+                ofs.align8(); // align to bytes if needed
+                uint8_t* out_buf8 = (uint8_t*)ofs.cur_data8();
+                test_unmapped_buf_stream.seek(0);
+                uint8_t* in_buf8 = (uint8_t*)test_unmapped_buf_stream.cur_data8();
+                auto out_bytes = uncompressed_size / 8;
+                for(size_t i=0;i<out_bytes;i++) *out_buf8++ = *in_buf8++;
+                ofs.skip(uncompressed_size);
+            }
+            
+        }
+        size_t offset_size_bytes = (ofs.tellp() - offsets_before)/8;
+        
+        size_t total_size_bytes = (ofs.tellp() - total_before)/8;
+        
+        LOG(INFO) << name << ";"
+                  << block_id << ";"
+                  << len_size_bytes << ";"
+                  << literal_size_bytes << ";"
+                  << offset_size_bytes << ";"
+                  << page_table_size_bytes << ";"
+                  << bfd.num_offsets << ";"
+                  << num_pages_in_block << ";"
+                  << use_page_table << ";"
+                  << total_size_bytes;
     }
 
     template <class t_istream,class t_vec>
@@ -251,8 +392,10 @@ struct factor_coder_blocked_subdict_zzz {
             }
             
             for(size_t i=0;i<bfd.num_offsets;i++) {
-                bfd.sp[i] = spep_store[spep_start+2*i];
-                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+                bfd.sp[i] = spep_store[spep_start+4*i];
+                bfd.ep[i] = spep_store[spep_start+(4*i+1)];
+                bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
+                bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
             }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
@@ -348,9 +491,104 @@ struct factor_coder_blocked_subdict_pv {
             for(size_t i=0;i<bfd.num_offsets;i++) {
                 spep_store.push_back(bfd.sp[i]);
                 spep_store.push_back(bfd.ep[i]);
+                spep_store.push_back(bfd.sp1[i]);
+                spep_store.push_back(bfd.ep1[i]);
             }   
         }
     }
+
+
+    template <class t_ostream>
+    void encode_block_output(t_ostream& ofs,block_factor_data& bfd,size_t block_id,const char* name) const
+    {
+        size_t total_before = ofs.tellp();
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + bfd.num_factors, [](uint32_t& n) { n--; });
+        size_t before = ofs.tellp();
+        len_coder.encode(ofs, bfd.lengths.data(), bfd.num_factors);
+        size_t len_size_bytes = (ofs.tellp() - before)/8;
+        // LOG(INFO) << "encode literals at " << ofs.tellp();
+        
+        before = ofs.tellp();
+        if (bfd.num_literals) {
+            literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
+        }
+        size_t literal_size_bytes = (ofs.tellp() - before)/8;
+        
+        size_t offsets_before = ofs.tellp();
+        size_t page_table_size_bytes = 0;
+        bool use_page_table = false;
+        size_t num_pages_in_block = 0;
+        if (bfd.num_offsets) {
+            if(page_offsets.size() < bfd.num_offsets) page_offsets.resize(bfd.num_offsets);
+            // (1) determine page offsets
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                page_offsets[i] = bfd.offsets[i] >> page_size_log2;
+            }
+            // (2) determine unique offsets
+            std::sort(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            auto end = std::unique(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            num_pages_in_block = std::distance(page_offsets.begin(),end);
+            
+            // (3) map offsets 
+            if(mapped_offsets.size() < bfd.num_offsets) mapped_offsets.resize(bfd.num_offsets);
+            uint64_t max_offset = ( (num_pages_in_block-1) << page_size_log2) + (t_page_size-1);
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                auto page_nr = bfd.offsets[i] >> page_size_log2;
+                auto in_page_offset = bfd.offsets[i]&sdsl::bits::lo_set[page_size_log2];
+                auto new_page_itr = std::lower_bound(page_offsets.begin(),end, page_nr);
+                auto new_page_nr = std::distance(page_offsets.begin(),new_page_itr);
+                mapped_offsets[i] = (new_page_nr << page_size_log2) + in_page_offset;
+            }
+
+            // (34) estimate cost to encode
+            auto compressed_pagetable_size = page_coder.determine_size(page_offsets.data(),num_pages_in_block,t_total_pages);
+            auto offset_cost = minbin_coder.determine_size(mapped_offsets.data(),bfd.num_offsets,max_offset);
+            auto compressed_size = offset_cost + compressed_pagetable_size;
+            auto uncompressed_size = bfd.num_offsets * dict_size_log2;
+
+            if(compressed_size < uncompressed_size) {
+                // (5a) encode page numbers
+                ofs.put_int(num_pages_in_block,16);
+
+                use_page_table = true;
+                size_t pagetable_before = ofs.tellp();
+                page_coder.encode(ofs,page_offsets.data(),num_pages_in_block,t_total_pages);
+                page_table_size_bytes = (ofs.tellp() - pagetable_before)/8;
+
+                // (5b) map offsets to page offsets
+                for(size_t i=0;i<bfd.num_offsets;i++) {
+                    auto page_nr = bfd.offsets[i] >> page_size_log2;
+                    auto in_page_offset = bfd.offsets[i]&sdsl::bits::lo_set[page_size_log2];
+                    auto new_page_itr = std::lower_bound(page_offsets.begin(),end, page_nr);
+                    auto new_page_nr = std::distance(page_offsets.begin(),new_page_itr);
+                    bfd.offsets[i] = (new_page_nr << page_size_log2) + in_page_offset;
+                }
+                // (5c) encode new offsets
+                minbin_coder.encode(ofs,mapped_offsets.data(),bfd.num_offsets,max_offset);
+            } else {
+                // or (5) regular uncompressed encoding
+                ofs.put_int(0,16);
+                offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
+            }
+            
+        }
+        size_t offset_size_bytes = (ofs.tellp() - offsets_before)/8;
+        
+        size_t total_size_bytes = (ofs.tellp() - total_before)/8;
+        
+        LOG(INFO) << name << ";"
+                  << block_id << ";"
+                  << len_size_bytes << ";"
+                  << literal_size_bytes << ";"
+                  << offset_size_bytes << ";"
+                  << page_table_size_bytes << ";"
+                  << bfd.num_offsets << ";"
+                  << num_pages_in_block << ";"
+                  << use_page_table << ";"
+                  << total_size_bytes;
+        
+    }
+
 
     template <class t_istream,class t_vec>
     coder_size_info decode_block(t_istream& ifs,t_vec& spep_store,size_t spep_start,block_factor_data& bfd, size_t num_factors) const
@@ -408,8 +646,10 @@ struct factor_coder_blocked_subdict_pv {
             }
             
             for(size_t i=0;i<bfd.num_offsets;i++) {
-                bfd.sp[i] = spep_store[spep_start+2*i];
-                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+                bfd.sp[i] = spep_store[spep_start+4*i];
+                bfd.ep[i] = spep_store[spep_start+(4*i+1)];
+                bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
+                bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
             }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
