@@ -43,12 +43,12 @@ struct factor_coder_blocked {
             literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
         if (bfd.num_offsets) {
             offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                spep_store.push_back(bfd.sp[i]);
-                spep_store.push_back(bfd.ep[i]);
-                spep_store.push_back(bfd.sp1[i]);
-                spep_store.push_back(bfd.ep1[i]);
-            }   
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     spep_store.push_back(bfd.sp[i]);
+            //     spep_store.push_back(bfd.ep[i]);
+            //     spep_store.push_back(bfd.sp1[i]);
+            //     spep_store.push_back(bfd.ep1[i]);
+            // }   
         }
     }
 
@@ -116,10 +116,10 @@ struct factor_coder_blocked {
             offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             csi.offset_bytes = (ifs.tellg() - off_pos)/8;
             
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                bfd.sp[i] = spep_store[spep_start+2*i];
-                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
-            }   
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     bfd.sp[i] = spep_store[spep_start+2*i];
+            //     bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+            // }   
         }
         return csi;
     }
@@ -226,12 +226,12 @@ struct factor_coder_blocked_subdict_zzz {
                 ofs.skip(uncompressed_size);
             }
             
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                spep_store.push_back(bfd.sp[i]);
-                spep_store.push_back(bfd.ep[i]);
-                spep_store.push_back(bfd.sp1[i]);
-                spep_store.push_back(bfd.ep1[i]);
-            }   
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     spep_store.push_back(bfd.sp[i]);
+            //     spep_store.push_back(bfd.ep[i]);
+            //     spep_store.push_back(bfd.sp1[i]);
+            //     spep_store.push_back(bfd.ep1[i]);
+            // }   
         }
     }
 
@@ -391,12 +391,12 @@ struct factor_coder_blocked_subdict_zzz {
                 offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             }
             
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                bfd.sp[i] = spep_store[spep_start+4*i];
-                bfd.ep[i] = spep_store[spep_start+(4*i+1)];
-                bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
-                bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
-            }
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     bfd.sp[i] = spep_store[spep_start+4*i];
+            //     bfd.ep[i] = spep_store[spep_start+(4*i+1)];
+            //     bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
+            //     bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
+            // }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
         return csi;
@@ -488,12 +488,12 @@ struct factor_coder_blocked_subdict_pv {
             }
             
             // encode sp ep for RLZ-P2
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                spep_store.push_back(bfd.sp[i]);
-                spep_store.push_back(bfd.ep[i]);
-                spep_store.push_back(bfd.sp1[i]);
-                spep_store.push_back(bfd.ep1[i]);
-            }   
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     spep_store.push_back(bfd.sp[i]);
+            //     spep_store.push_back(bfd.ep[i]);
+            //     spep_store.push_back(bfd.sp1[i]);
+            //     spep_store.push_back(bfd.ep1[i]);
+            // }   
         }
     }
 
@@ -645,12 +645,12 @@ struct factor_coder_blocked_subdict_pv {
                 offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             }
             
-            for(size_t i=0;i<bfd.num_offsets;i++) {
-                bfd.sp[i] = spep_store[spep_start+4*i];
-                bfd.ep[i] = spep_store[spep_start+(4*i+1)];
-                bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
-                bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
-            }
+            // for(size_t i=0;i<bfd.num_offsets;i++) {
+            //     bfd.sp[i] = spep_store[spep_start+4*i];
+            //     bfd.ep[i] = spep_store[spep_start+(4*i+1)];
+            //     bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
+            //     bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
+            // }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
         return csi;

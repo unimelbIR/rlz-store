@@ -163,6 +163,11 @@ struct factor_itr_csa {
         }
         done = true;
     }
+    
+    inline void rewind() {
+        itr--;
+    }
+    
     inline bool finished() const
     {
         return done;
@@ -240,6 +245,7 @@ struct factor_itr_csa_restricted {
         }
         done = true;
     }
+
     inline bool finished() const
     {
         return done;

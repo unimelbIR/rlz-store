@@ -75,5 +75,8 @@ target_link_libraries(create-collection.x sdsl pthread zlib boost_system boost_i
 add_executable(unit-tests.x src/unit-tests.cpp)
 target_link_libraries(unit-tests.x sdsl pthread zlib gtest_main lz4 bzip2)
 
-add_executable(bench-indexes-sigir16.x src/experiments/bench-indexes-sigir16.cpp)
-target_link_libraries(bench-indexes-sigir16.x sdsl pthread divsufsort divsufsort64 zlib lz4 bzip2)
+add_executable(bench-indexes-sigir16-inmem.x src/experiments/bench-indexes-sigir16-inmem.cpp)
+target_link_libraries(bench-indexes-sigir16-inmem.x sdsl pthread divsufsort divsufsort64 zlib lz4 bzip2)
+
+add_executable(check-collection.x src/check-collection.cpp)
+target_link_libraries(check-collection.x sdsl pthread zlib lz4 bzip2)

@@ -16,8 +16,8 @@ template <
 uint32_t t_block_size = 1024,
 uint32_t t_estimator_block_size = 16,
 uint32_t t_down_size = 256,
-class t_norm = std::ratio<1,1>,
-ACCESS_TYPE t_method = SEQ
+class t_norm = std::ratio<1,2>,
+ACCESS_TYPE t_method = RAND
 >
 class dict_local_coverage_norms{
 public:
@@ -263,9 +263,14 @@ public:
 			    sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
 			    for(const auto& pb : picked_blocks) {
 				    auto beg = text.begin() + pb;
-				    auto end = beg + t_block_size;
+				    auto end = beg + t_block_size -1;
 				    std::copy(beg,end,std::back_inserter(dict));
+                    dict.push_back(1);
 			    }
+                // make sure we have the right size
+                if(dict.size() != budget_bytes-1) {
+                    dict.resize(budget_bytes-1);
+                }
             }
 	
 			LOG(INFO) << "\t" << "Final dictionary size = " << dict.size()/(1024*1024) << " MiB"; 

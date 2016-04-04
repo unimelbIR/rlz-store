@@ -154,7 +154,7 @@ struct zlib {
 public:
     static const uint32_t mem_level = 9;
     static const uint32_t window_bits = 15;
-
+    mutable std::vector<uint8_t> in_buf;
 private:
     mutable z_stream dstrm;
     mutable z_stream istrm;
@@ -207,6 +207,24 @@ public:
         size_in_bits += written_bytes*8;
         return size_in_bits;
     }
+
+    template<class t_itr>
+    inline void set_deflate_dictionary(t_itr itr, uint32_t n) const
+    {
+        if( tmp_buf.size() < n) tmp_buf.resize(n);
+        for(size_t i=0;i<n;i++) tmp_buf[i] = *itr++;
+        auto ret = deflateSetDictionary(&dstrm, tmp_buf.data(), n);
+        if (ret != Z_OK) {
+            LOG(FATAL) << "zlib-encode: set dictionary error:" << ret;
+        }
+    }
+
+    inline void set_inflate_dictionary(const uint8_t* dptr, uint32_t n) const
+    {
+        dict_ptr = dptr;
+        dict_size = n;
+    }
+
 
     template <class t_bit_ostream, class T>
     inline void encode(t_bit_ostream& os, const T* in_buf, size_t n) const

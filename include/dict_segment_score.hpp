@@ -9,23 +9,17 @@ enum class remap_mode_t {
     reorder_preferred_hapax
 };
 
-template <uint32_t t_segment_size_bytes,uint32_t t_page_size_bytes,remap_mode_t t_mode>
+template <uint32_t t_segment_size_bytes, uint32_t t_page_size_bytes>
 class dict_segment_score {
 public:
-    static uint32_t segment_size() {
+    static uint32_t segment_size()
+    {
         return t_segment_size_bytes;
     }
-    static uint32_t page_size() {
+    static uint32_t page_size()
+    {
+
         return t_page_size_bytes;
-    }
-    static remap_mode_t remap_mode() {
-        return t_mode;
-    }
-    static std::string remap_mode_str() {
-        if(t_mode == remap_mode_t::only_reorder) return "-rom=or";
-            
-        if(t_mode == remap_mode_t::reorder_preferred) return "-rom=rp";
-        return "-rom=rpx";
     }
     static std::string type()
     {
@@ -39,9 +33,7 @@ public:
     }
 
 public:
-    static void create(collection& , bool , size_t )
+    static void create(collection&, bool, size_t)
     {
-
     }
-
 };

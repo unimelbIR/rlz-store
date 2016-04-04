@@ -168,6 +168,12 @@ struct factor_storage {
         // save the start of the encoding process
         encoding_start = hrclock::now();
     }
+    
+    template<class t_itr>
+    void add_literals(t_itr text_itr,size_t len) {
+        tmp_block_factor_data.add_literals(text_itr,len);
+    }
+    
     template <class t_coder, class t_itr>
     void add_to_block_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t sp, uint32_t ep, uint32_t sp1, uint32_t ep1)
     {

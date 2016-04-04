@@ -54,12 +54,13 @@ struct factorizor {
         return col.path + "/index/" + KEY_SPEP + "-fs=" + type() + "-dhash=" + dict_hash + ".sdsl";
     }
 
-    template <class t_factor_store, class t_itr>
-    static void factorize_block(t_factor_store& fs, t_coder& coder, const t_index& idx, t_itr itr, t_itr end)
+    template <class t_factor_store,class t_half_coder, class t_itr>
+    static void factorize_block(t_factor_store& fs,t_half_coder& hcoder, t_coder& coder, const t_index& idx, t_itr itr, t_itr end)
     {
         // utils::rlz_timer<std::chrono::milliseconds> fbt("factorize_block");
         uint64_t encoding_block_size = std::distance(itr,end);
-        auto factor_itr = idx.factorize<decltype(itr),t_search_local_block_context>(itr, end);
+        auto end_enc = itr + encoding_block_size;
+        auto factor_itr = idx.factorize<decltype(itr),t_search_local_block_context>(itr, end_enc);
         fs.start_new_block();
         size_t syms_encoded = 0;
         while (!factor_itr.finished()) {
@@ -73,7 +74,10 @@ struct factorizor {
             }
             ++factor_itr;
         }
+        
+        /* encode second half with zlib */
         fs.encode_current_block(coder);
+        
     }
 
     template <class t_factor_store, class t_itr>
@@ -83,6 +87,8 @@ struct factorizor {
         const sdsl::int_vector_mapped_buffer<8> text(col.file_map[KEY_TEXT]);
         auto itr = text.begin() + _itr;
         auto end = text.begin() + _end;
+        
+        coder::zlib<9> hcoder;
 
         /* (1) create output files */
         t_factor_store fs(col, t_block_size, offset);
@@ -101,7 +107,7 @@ struct factorizor {
         for (size_t i = 1; i <= num_blocks; i++) {
             auto block_end = itr + block_size;
             // LOG(INFO) << "block " << i;
-            factorize_block(fs, coder, idx, itr, block_end);
+            factorize_block(fs,hcoder, coder, idx, itr, block_end);
             itr = block_end;
             block_end += block_size;
             if (i % blocks_per_10mib == 0) {
@@ -111,7 +117,7 @@ struct factorizor {
 
         /* (5) is there a non-full block? */
         if (left != 0) {
-            factorize_block(fs, coder, idx, itr, end);
+            factorize_block(fs,hcoder, coder, idx, itr, end);
         }
 
         return fs.result();

@@ -42,7 +42,13 @@ struct block_factor_data {
         lengths.resize(block_size);
         offset_literals.resize(block_size);
     }
-
+    
+    template <class t_itr>
+    void add_literals(t_itr text_itr,size_t len) {
+        std::copy(text_itr, text_itr + len, literals.begin() + num_literals);
+        num_literals += len;
+    }
+    
     template <class t_coder, class t_itr>
     void add_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t _sp, uint32_t _ep, uint32_t _sp1, uint32_t _ep1)
     {
