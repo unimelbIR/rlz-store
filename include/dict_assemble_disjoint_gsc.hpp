@@ -154,7 +154,7 @@ public:
 			
 			// std::move(rs.begin(), rs.end(), std::inserter(useful_blocks, useful_blocks.end()));
 			LOG(INFO) << "\t" << "Useful kept small blocks no. = " << block_counts.size(); 	
-/*
+
 			//2nd pass: assembe k-mers to contigs and then to dictionary of undermined size
 			LOG(INFO) << "\t" << "Assembling and initial dic construction..."; 
 			auto start = hrclock::now();
@@ -204,12 +204,12 @@ public:
 			dict.push_back(0); // zero terminate for SA construction
 			auto stop = hrclock::now();																																																																																																																																																																																																																																																																																																																																																																																																																					
 		    LOG(INFO) << "\t" << "Assemble and construct dic runtime = " << duration_cast<milliseconds>(stop-start).count() / 1000.0f << " sec";
-	*/	} else {
+		} else {
 			LOG(INFO) << "\t" << "Dictionary exists at '" << fname << "'";
 		}
 		// compute a hash of the dict so we don't reconstruct things
 		// later when we don't have to.
-//		col.compute_dict_hash();
+		col.compute_dict_hash();
 
 		//TODO: 3rd pass: using global sc or another algorithm to process subsampled and glued text 
 
