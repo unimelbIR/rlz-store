@@ -31,7 +31,7 @@ public:
 	sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
 		//auto ratio = (text.size()/size_in_bytes)/2;
         //return (ratio >= t_down_size? t_down_size : ratio);
-		return 256; //for 10gb
+		return 128; //for 10gb
     }
  	
     static std::string container_type()
@@ -165,6 +165,8 @@ public:
 			std::unordered_set<uint64_t> uniqueSegs;
 			uniqueSegs.max_load_factor(0.1);
 			std::hash<std::string> hash_fn;
+
+			//TODO: add stopping criteria when all freq k-mers are included, maybe too bias
 			for(size_t i = 0; i < text.size()-t_estimator_block_size+1;i++) {				
 				auto sym = text[i];
 				auto hash = rk.update(sym);
@@ -191,7 +193,7 @@ public:
 							found = false;
 						} 
 						else if (found == true && (i - beginPos < 32 || i - beginPos > 1024)) {
-							beginPos = i+1;
+ 					 	        beginPos = i+1;
 							found = false;
 						} 
 						else {
