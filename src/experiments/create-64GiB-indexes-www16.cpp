@@ -18,7 +18,7 @@ void create_indexes(collection& col,utils::cmdargs_t& args)
 {
     {
     	/* RLZ-ZZ */
- /*       
+ /* 
         auto rlz_store_0 = rlz_type_zz_greedy_sp::builder{}
                                  .set_rebuild(args.rebuild)
                                  .set_threads(args.threads)
@@ -169,9 +169,10 @@ void create_indexes(collection& col,utils::cmdargs_t& args)
         compare_indexes(col,rlz_store_12, "Deduplicate");
         LOG(INFO) << "Deduplicate compression ratio = "
                   << 100.0 * (double) rlz_store_12.size_in_bytes() / (double) rlz_store_12.text_size;
- */
+*/ 
         const uint32_t factorization_blocksize = 64 * 1024;
         // const uint32_t sampling_blocksize = 512;          
+
         // auto rlz_store_0 = rlz_type_zzz_greedy_sp_rs<factorization_blocksize,false>::builder{}
         //                          .set_rebuild(args.rebuild)
         //                          .set_threads(args.threads)
@@ -197,7 +198,6 @@ void create_indexes(collection& col,utils::cmdargs_t& args)
                   << 100.0 * (double) rlz_store.size_in_bytes() / (double) rlz_store.text_size;
         LOG(INFO) << "Local_half_norm_rand compression ratio (exclude dic) = "
                   << 100.0 * (double) (rlz_store.size_in_bytes() - dict_size_in_bytes)/ (double) rlz_store.text_size;
-
         // const uint32_t factorization_blocksize = 64 * 1024;
         // const uint32_t sampling_blocksize = 1 * 1024;          
         // auto rlz_store_0 = rlz_type_zzz_greedy_sp_initial_localremplusplus<factorization_blocksize,sampling_blocksize,false>::builder{}
@@ -247,16 +247,15 @@ int main(int argc, const char* argv[])
     collection col(args.collection_dir);
 
     /* create rlz indices */
-    // create_indexes<1*1024*1024>(col,args);
-    create_indexes<2*1024*1024>(col,args);
-    // create_indexes<4*1024*1024>(col,args);
-    // create_indexes<8*1024*1024>(col,args);
-    // create_indexes<16*1024*1024>(col,args);
-    // create_indexes<32*1024*1024>(col,args); 
-    // create_indexes<64*1024*1024>(col,args);
-    // create_indexes<128*1024*1024>(col,args);
-    // create_indexes<256*1024*1024>(col,args);
-
+//    create_indexes<1*1024*1024>(col,args);
+//    create_indexes<2*1024*1024>(col,args);
+//    create_indexes<4*1024*1024>(col,args);
+    create_indexes<8*1024*1024>(col,args);
+//    create_indexes<16*1024*1024>(col,args);
+//    create_indexes<32*1024*1024>(col,args); 
+//    create_indexes<64*1024*1024>(col,args);
+//    create_indexes<128*1024*1024>(col,args);
+//    create_indexes<256*1024*1024>(col,args);
    // create_indexes<1024*1024*1024>(col,args);
    // create_indexes<2048*1024*1024L>(col,args);
     return EXIT_SUCCESS;

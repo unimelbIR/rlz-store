@@ -176,7 +176,7 @@ public:
 					if(block_counts.find(hash) != block_counts.end()) //assemble
 						found = true;
 					else {//write and skip
-						if(found == true && i - beginPos <= 1024) {//write while removing duplicates
+						if(found == true && (i - beginPos >= 32 && i - beginPos <= 1024)) {//write while removing duplicates
 							auto beg = text.begin() + beginPos;
 					    	auto end = text.begin() + i;
 					    	std::string seg(beg,end);
@@ -192,8 +192,8 @@ public:
 							beginPos = i+1;
 							found = false;
 						} 
-						else if (found == true && i - beginPos > 1024) {
-							beginPos = i+1;
+						else if (found == true && (i - beginPos < 32 || i - beginPos > 1024)) {
+ 					 	        beginPos = i+1;
 							found = false;
 						} 
 						else {
