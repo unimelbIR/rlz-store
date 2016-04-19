@@ -172,19 +172,19 @@ void create_indexes(collection& col,utils::cmdargs_t& args)
  */
         const uint32_t factorization_blocksize = 64 * 1024;
         // const uint32_t sampling_blocksize = 512;          
-        auto rlz_store_0 = rlz_type_zzz_greedy_sp_rs<factorization_blocksize,false>::builder{}
-                                 .set_rebuild(args.rebuild)
-                                 .set_threads(args.threads)
-                                 .set_dict_size(dict_size_in_bytes)
-                                 .build_or_load(col);
+        // auto rlz_store_0 = rlz_type_zzz_greedy_sp_rs<factorization_blocksize,false>::builder{}
+        //                          .set_rebuild(args.rebuild)
+        //                          .set_threads(args.threads)
+        //                          .set_dict_size(dict_size_in_bytes)
+        //                          .build_or_load(col);
 
-        compare_indexes(col,rlz_store_0, "Dictionary construction via regular sampling");
-        LOG(INFO) << "Dictionary Size in MB = " 
-                  << dict_size_in_bytes/(1024*1024);
-        LOG(INFO) << "Regular sampling compression ratio (include dic) = " 
-                  << 100.0 * (double) rlz_store_0.size_in_bytes() / (double) rlz_store_0.text_size;    
-        LOG(INFO) << "Regular sampling compression ratio (exclude dic) = "
-                  << 100.0 * (double) (rlz_store_0.size_in_bytes() - dict_size_in_bytes) / (double) rlz_store_0.text_size;    
+        // compare_indexes(col,rlz_store_0, "Dictionary construction via regular sampling");
+        // LOG(INFO) << "Dictionary Size in MB = " 
+        //           << dict_size_in_bytes/(1024*1024);
+        // LOG(INFO) << "Regular sampling compression ratio (include dic) = " 
+        //           << 100.0 * (double) rlz_store_0.size_in_bytes() / (double) rlz_store_0.text_size;    
+        // LOG(INFO) << "Regular sampling compression ratio (exclude dic) = "
+        //           << 100.0 * (double) (rlz_store_0.size_in_bytes() - dict_size_in_bytes) / (double) rlz_store_0.text_size;    
 
         // utils::flush_cache();
         auto rlz_store = rlz_type_zzz_greedy_sp_local_half_norm_rand<factorization_blocksize,false>::builder{}
@@ -247,7 +247,7 @@ int main(int argc, const char* argv[])
     collection col(args.collection_dir);
 
     /* create rlz indices */
-    create_indexes<1*1024*1024>(col,args);
+    // create_indexes<1*1024*1024>(col,args);
     create_indexes<2*1024*1024>(col,args);
     // create_indexes<4*1024*1024>(col,args);
     // create_indexes<8*1024*1024>(col,args);
