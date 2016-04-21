@@ -68,10 +68,11 @@ public:
             size_t num_samples = budget_bytes / t_block_size; //hopefully much smaller than the adjusted
             size_t scale =  n / budget_bytes; //hopefully much smaller than the adjusted, may not be divisible, can fix later
             size_t sample_step = scale * t_block_size;
-	    int thres = 1; 
-	    if(scale >= 8*1024) thres = 16; //naive way of filling, there might be fractional breakups.....
-	    else if(scale < 8*1024 && scale >= 1024) thres = 8;
-	    else thres = 4; //minimum saving tryout currently set to be 4 or 1?
+		    int thres = 1; 
+		    if(scale >= 8*1024) thres = 16;
+		    else if(scale >= 1024 && scale < 8*1024) thres = 8;
+		    else if(scale >= 512 && scale < 1024) thres = 4; //
+		    else thres = 2; //minimum saving half
 
             size_t sample_step_adjusted = sample_step / thres / t_block_size * t_block_size; //make a tempate para later
             size_t num_samples_adjusted = n / sample_step_adjusted; //may contain more samples
@@ -227,7 +228,7 @@ public:
 				step_mers.emplace(*itr);
 				itr++;
 			}
-			LOG(INFO) << "\t" << "Prefill history done with mers size" << step_mers.size(); 
+			LOG(INFO) << "\t" << "Prefill history done with mers size " << step_mers.size(); 
 
 			//process max cov
 			std::vector<uint64_t> picked_blocks;
