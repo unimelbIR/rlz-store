@@ -227,6 +227,7 @@ public:
 				step_mers.emplace(*itr);
 				itr++;
 			}
+			LOG(INFO) << "\t" << "Prefill history done with mers size" << step_mers.size(); 
 
 			//process max cov
 			std::vector<uint64_t> picked_blocks;
