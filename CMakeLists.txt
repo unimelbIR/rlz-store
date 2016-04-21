@@ -83,3 +83,6 @@ target_link_libraries(rlzs-index-statistics.x sdsl pthread divsufsort divsufsort
 
 add_executable(create-history.x src/experiments/create-history.cpp)
 target_link_libraries(create-history.x sdsl pthread divsufsort divsufsort64 zlib lzma lz4 bzip2)
+
+add_executable(create-combinedDict.x src/experiments/create-combinedDict.cpp)
+target_link_libraries(create-combinedDict.x sdsl pthread divsufsort divsufsort64 zlib lzma lz4 bzip2)
