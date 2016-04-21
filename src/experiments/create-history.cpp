@@ -49,15 +49,18 @@ int main(int argc, const char* argv[])
             }
         }
     }
-
+     LOG(INFO) << "\t" << "history_mers size: " << history_mers.size();
+	 
     //write to output file
     LOG(INFO) << "\t" << "Writing out history mers...";
-    auto history_out = sdsl::write_out_buffer<8>::create(file_history_mers);
+    auto history_out = sdsl::write_out_buffer<64>::create(file_history_mers);
     {
         auto itr = history_mers.begin();
         while(itr != history_mers.end()) {
-            std::copy(itr, ++itr, std::back_inserter(history_out));
-            // itr++;
+            //std::copy(itr, ++itr, std::back_inserter(history_out));
+           // itr++;
+	   history_out.push_back(*itr);
+	   itr++;
         }
     }
     auto stop = hrclock::now();    
