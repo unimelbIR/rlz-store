@@ -19,11 +19,11 @@ uint32_t t_down_size = 512,
 class t_norm = std::ratio<1,2>,
 ACCESS_TYPE t_method = SEQ
 >
-class dict_local_coverage_norms{
+class dict_multibale_local_coverage_norms{
 public:
     static std::string type()
     {
-        return "dict_local_coverage_norms-"+ std::to_string(t_method)+"-" +std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
+        return "dict_multibale_local_coverage_norms-"+ std::to_string(t_method)+"-" +std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
     }
     static uint32_t adjusted_down_size(collection& col, uint64_t size_in_bytes)
     {
@@ -215,7 +215,7 @@ public:
 			std::unordered_set<uint64_t> step_mers; //can be prefilled?
 			step_mers.max_load_factor(0.1);
 
-			//prefill
+			//prefill step_mers
 
 			std::vector<uint64_t> picked_blocks;
 			LOG(INFO) << "\t" << "Second pass: perform ordered max coverage..."; 
