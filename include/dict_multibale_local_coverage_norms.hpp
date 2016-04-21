@@ -69,7 +69,7 @@ public:
             size_t scale =  n / budget_bytes; //hopefully much smaller than the adjusted, may not be divisible, can fix later
             size_t sample_step = scale * t_block_size;
 	    int thres = 1; 
-	    if(scale >= 8*1024) thres = 16;
+	    if(scale >= 8*1024) thres = 16; //naive way of filling, there might be fractional breakups.....
 	    else if(scale < 8*1024 && scale >= 1024) thres = 8;
 	    else thres = 4; //minimum saving tryout currently set to be 4 or 1?
 
@@ -81,8 +81,6 @@ public:
             // size_t num_samples_adjusted = n / sample_step_adjusted; //may contain more samples
 
             //fix sampling every 1mb pick 1kb until dictionary is filled
-
-            
 
             LOG(INFO) << "\tDictionary samples to be picked = " << num_samples;
             LOG(INFO) << "\tText epoch size = " << sample_step;
@@ -215,8 +213,24 @@ public:
 			std::unordered_set<uint64_t> step_mers; //can be prefilled?
 			step_mers.max_load_factor(0.1);
 
-			//prefill step_mers
+			//prefill step_mers from the GOV2 bales history_mers?.sdsl hard code this file name, to be replaced by Matt later
+			std::string bale1_histroy = "history_mers_bale1.sdsl";
+			std::string bale2_histroy = "history_mers_bale2.sdsl";
+			std::string bale3_histroy = "history_mers_bale3.sdsl";
+			std::string bale4_histroy = "history_mers_bale4.sdsl";
+			std::string bale5_histroy = "history_mers_bale5.sdsl";
+			std::string bale6_histroy = "history_mers_bale6.sdsl";
 
+			LOG(INFO) << "\t" << "Load history_mers from file " << bale5_histroy; 
+			// sdsl::load_from_file(rs,sketch_name);
+			sdsl::read_only_mapper<64> history_file(bale5_histroy);
+			auto itr = history_file.begin();
+			while(itr != history_file.end()) {
+				step_mers.emplace(*itr);
+				itr++;
+			}
+
+			//process max cov
 			std::vector<uint64_t> picked_blocks;
 			LOG(INFO) << "\t" << "Second pass: perform ordered max coverage..."; 
 			start = hrclock::now();
@@ -253,7 +267,7 @@ public:
 					//sum_weights_current = std::sqrt(sum_weights_current);
 					if(norm > 0)
 						sum_weights_current = std::pow(sum_weights_current,1/norm);
-					if(sum_weights_current >= sum_weights_max)
+					if(sum_weights_current >= sum_weights_max) //consider tight breaking may get marginal gain, maynot be worth it.
 					{
 						sum_weights_max = sum_weights_current;
 						best_block_no = step_pos + j; 

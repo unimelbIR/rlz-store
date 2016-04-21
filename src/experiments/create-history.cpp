@@ -57,10 +57,10 @@ int main(int argc, const char* argv[])
     {
         auto itr = history_mers.begin();
         while(itr != history_mers.end()) {
-            //std::copy(itr, ++itr, std::back_inserter(history_out));
+           //std::copy(itr, ++itr, std::back_inserter(history_out));
            // itr++;
-	   history_out.push_back(*itr);
-	   itr++;
+    	   history_out.push_back(*itr);
+    	   itr++;
         }
     }
     auto stop = hrclock::now();    

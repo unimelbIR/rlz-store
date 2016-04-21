@@ -249,4 +249,13 @@ using rlz_type_zzz_greedy_sp_local_half_norm_rand =  rlz_store_static<dict_local
                                      factor_coder_blocked<3,coder::zlib<9>,coder::zlib<9>,coder::zlib<9>>,
                                      block_map_uncompressed>;
 
+template <uint32_t t_factorization_blocksize, bool t_local_search = false>
+using rlz_type_zzz_greedy_sp_multibale_local_half_norm_rand =  rlz_store_static<dict_multibale_local_coverage_norms<1024,16,512, std::ratio<1,2>, RAND>,
+                                     dict_prune_none,
+                                     dict_index_csa<www_csa_type>,
+                                     www_factorization_blocksize,
+                                     t_local_search, 
+                                     factor_select_first,
+                                     factor_coder_blocked<3,coder::zlib<9>,coder::zlib<9>,coder::zlib<9>>,
+                                     block_map_uncompressed>;
 
