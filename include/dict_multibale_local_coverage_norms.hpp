@@ -214,18 +214,16 @@ public:
 			step_mers.max_load_factor(0.1);
 
 			//prefill step_mers from the GOV2 bales history_mers?.sdsl hard code this file name, to be replaced by Matt later
-			std::string bale1_histroy = "history_mers_bale1.sdsl";
-			std::string bale2_histroy = "history_mers_bale2.sdsl";
-			std::string bale3_histroy = "history_mers_bale3.sdsl";
-			std::string bale4_histroy = "history_mers_bale4.sdsl";
-			std::string bale5_histroy = "history_mers_bale5.sdsl";
-			std::string bale6_histroy = "history_mers_bale6.sdsl";
+			std::string bale_file = "history_mers_bale";
+			std::string bale_no = "5"; //number to be changed, windows should be auto as well.
 
-			LOG(INFO) << "\t" << "Load history_mers from file " << bale5_histroy; 
+			std::string histroy_file = col.path + "/index/" + bale_file + bale_no + ".sdsl"; //to be manually changed
+
+			LOG(INFO) << "\t" << "Load history_mers from file " << histroy_file; 
 			// sdsl::load_from_file(rs,sketch_name);
-			sdsl::read_only_mapper<64> history_file(bale5_histroy);
-			auto itr = history_file.begin();
-			while(itr != history_file.end()) {
+			sdsl::read_only_mapper<64> history_mapper(histroy_file);
+			auto itr = history_mapper.begin();
+			while(itr != history_mapper.end()) {
 				step_mers.emplace(*itr);
 				itr++;
 			}
