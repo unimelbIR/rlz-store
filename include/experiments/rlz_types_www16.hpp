@@ -196,14 +196,6 @@ using rlz_type_zzz_greedy_sp_assembly =  rlz_store_static<dict_assemble_gsc<2048
                                      factor_select_first,
                                      factor_coder_blocked<3,coder::zlib<9>,coder::zlib<9>,coder::zlib<9>>,
                                      block_map_uncompressed>;
-<<<<<<< HEAD
-template <uint32_t t_factorization_blocksize,bool t_local_search = false>
-using rlz_type_zzz_greedy_sp_assembly_disjoint =  rlz_store_static<dict_assemble_disjoint_gsc<2048,65536,256, std::ratio<1,2>, RAND>,
-                                     dict_prune_none,
-                                     dict_index_csa<csa_type>,
-                                     t_factorization_blocksize,
-                                     t_local_search,
-=======
 
 template <uint32_t t_factorization_blocksize,bool t_local_search = false>
 using rlz_type_zzz_greedy_sp_deduplicate =  rlz_store_static<deduplicator<256>,
