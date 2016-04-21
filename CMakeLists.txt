@@ -80,3 +80,6 @@ target_link_libraries(create-64GiB-indexes-www16.x sdsl pthread divsufsort divsu
 
 add_executable(rlzs-index-statistics.x src/rlzs-index-statistics.cpp)
 target_link_libraries(rlzs-index-statistics.x sdsl pthread divsufsort divsufsort64 zlib lzma lz4 bzip2)
+
+add_executable(create-history.x src/experiments/create-history.cpp)
+target_link_libraries(create-history.x sdsl pthread divsufsort divsufsort64 zlib lzma lz4 bzip2)
