@@ -215,7 +215,7 @@ public:
 			step_mers.max_load_factor(0.1);
 
 			//prefill step_mers from the GOV2 bales history_mers?.sdsl hard code this file name, to be replaced by Matt later
-			std::string bale_file = "history_mers_bale";
+			std::string bale_file = "history_mers_BALE";
 			std::string bale_no = "5"; //number to be changed, windows should be auto as well.
 
 			std::string histroy_file = col.path + "/index/" + bale_file + bale_no + ".sdsl"; //to be manually changed
