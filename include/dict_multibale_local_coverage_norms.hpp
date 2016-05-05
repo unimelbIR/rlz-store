@@ -216,11 +216,7 @@ public:
 
 			//prefill step_mers from the GOV2 bales history_mers?.sdsl hard code this file name, to be replaced by Matt later
 			std::string bale_file = "history_mers_BALE";
-<<<<<<< HEAD
-			std::string bale_no = "5"; //number to be changed, windows should be auto as well.
-=======
 			std::string bale_no = "5";//number to be changed, windows should be auto as well.
->>>>>>> 644bb48be4e77f490739c5a3fa37f470fbc8125b
 
 			std::string histroy_file = col.path + "/index/" + bale_file + bale_no; //to be manually changed
 
