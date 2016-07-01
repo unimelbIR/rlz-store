@@ -30,7 +30,7 @@ public:
 		sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
 		auto thres = (text.size()/size_in_bytes)/2;
         // return (thres >= t_down_size? thres : t_down_size);
-		return 512;   
+		return 1024*1024;   
  	}
  	
     static std::string container_type()
@@ -111,11 +111,10 @@ public:
 				//double r = dis(gen);
 				double w = std::exp(std::log(dis(gen))/rs_size);
 				double s = std::floor(std::log(dis(gen))/std::log(1-w));
-			
 				for(size_t i=0;i<text.size();i++) {
 					auto sym = text[i];
 					auto hash = rk.update(sym);
-			
+
 					if(i < t_estimator_block_size-1) continue;
 					else {
 						if(count < rs_size) 
