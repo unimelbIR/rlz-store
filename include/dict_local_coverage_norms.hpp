@@ -30,7 +30,7 @@ public:
 		sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
 		auto thres = (text.size()/size_in_bytes)/2;
         // return (thres >= t_down_size? thres : t_down_size);
-		return 1024*1024;   
+		return 512;   
  	}
  	
     static std::string container_type()
@@ -73,7 +73,7 @@ public:
 		    else if(scale >= 1024 && scale < 8*1024) thres = 8;
 		    else if(scale >= 512 && scale < 1024) thres = 4; //
 		    else thres = 2; //minimum saving half
-
+		LOG(INFO) << "\t" << "Faster Threshold  = " << thres;
             size_t sample_step_adjusted = sample_step / thres / t_block_size * t_block_size; //make a tempate para later
             size_t num_samples_adjusted = n / sample_step_adjusted; //may contain more samples
 
