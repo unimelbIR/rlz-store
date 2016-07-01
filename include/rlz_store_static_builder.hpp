@@ -99,7 +99,8 @@ public:
         // auto stop = hrclock::now();
         // LOG(INFO) << "RLZ construction complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
 
-        return rlz_store_static(col);
+        // return rlz_store_static(col); 
+        return NULL;
     }
 
     rlz_store_static load(collection& col) const
