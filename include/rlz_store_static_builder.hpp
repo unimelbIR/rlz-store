@@ -76,28 +76,28 @@ public:
                                                                                                    rebuild, pruned_dict_size_bytes, num_threads);
         LOG(INFO) << "Dictionary after pruning '" << col.param_map[PARAM_DICT_HASH] << "'";
 
-        // (3) create factorized text using the dict
-        auto factor_file_name = factorization_strategy::factor_file_name(col);
-        if (rebuild || !utils::file_exists(factor_file_name)) {
-            factorization_strategy::template parallel_factorize<factor_storage>(col, rebuild, num_threads);
-        } else {
-            LOG(INFO) << "Factorized text exists.";
-            col.file_map[KEY_FACTORIZED_TEXT] = factor_file_name;
-            col.file_map[KEY_BLOCKOFFSETS] = factorization_strategy::boffsets_file_name(col);
-            col.file_map[KEY_BLOCKFACTORS] = factorization_strategy::bfactors_file_name(col);
-        }
+        // // (3) create factorized text using the dict
+        // auto factor_file_name = factorization_strategy::factor_file_name(col);
+        // if (rebuild || !utils::file_exists(factor_file_name)) {
+        //     factorization_strategy::template parallel_factorize<factor_storage>(col, rebuild, num_threads);
+        // } else {
+        //     LOG(INFO) << "Factorized text exists.";
+        //     col.file_map[KEY_FACTORIZED_TEXT] = factor_file_name;
+        //     col.file_map[KEY_BLOCKOFFSETS] = factorization_strategy::boffsets_file_name(col);
+        //     col.file_map[KEY_BLOCKFACTORS] = factorization_strategy::bfactors_file_name(col);
+        // }
 
-        // (4) encode document start pos
-        LOG(INFO) << "Create block map (" << block_map_type::type() << ")";
-        auto blockmap_file = blockmap_file_name(col);
-        if (rebuild || !utils::file_exists(blockmap_file)) {
-            block_map_type tmp(col);
-            sdsl::store_to_file(tmp, blockmap_file);
-        }
-        col.file_map[KEY_BLOCKMAP] = blockmap_file;
+        // // (4) encode document start pos
+        // LOG(INFO) << "Create block map (" << block_map_type::type() << ")";
+        // auto blockmap_file = blockmap_file_name(col);
+        // if (rebuild || !utils::file_exists(blockmap_file)) {
+        //     block_map_type tmp(col);
+        //     sdsl::store_to_file(tmp, blockmap_file);
+        // }
+        // col.file_map[KEY_BLOCKMAP] = blockmap_file;
 
-        auto stop = hrclock::now();
-        LOG(INFO) << "RLZ construction complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
+        // auto stop = hrclock::now();
+        // LOG(INFO) << "RLZ construction complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
 
         return rlz_store_static(col);
     }
