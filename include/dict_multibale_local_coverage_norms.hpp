@@ -16,14 +16,13 @@ template <
 uint32_t t_block_size = 1024,
 uint32_t t_estimator_block_size = 16,
 uint32_t t_down_size = 512,
-class t_norm = std::ratio<1,2>,
-ACCESS_TYPE t_method = SEQ
+class t_norm = std::ratio<1,2>
 >
 class dict_multibale_local_coverage_norms{
 public:
     static std::string type()
     {
-        return "dict_multibale_local_coverage_norms-"+ std::to_string(t_method)+"-" +std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
+        return "dict_multibale_local_coverage_norms-" +std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
     }
     static uint32_t adjusted_down_size(collection& col, uint64_t size_in_bytes)
     {
@@ -37,10 +36,11 @@ public:
     {
         return std::to_string(t_estimator_block_size);
     }
-    static std::string dict_file_name(collection& col, uint64_t size_in_bytes)
+    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type)
     {
         auto size_in_mb = size_in_bytes / (1024 * 1024);
-	return col.path + "/index/" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl";
+		std::string ctype = "-rw" + std::to_string(c_type);
+		return col.path + "/index/" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl"+ctype;
     }
     static std::string container_file_name(collection& col, uint64_t size_in_bytes)
     {
@@ -48,13 +48,13 @@ public:
         return col.path + "/index/" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild,size_t size_in_bytes) {
+	static void create(collection& col, bool rebuild,size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> *history_mers = NULL) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
 
         // check if we store it already and load it
-        auto fname = dict_file_name(col, size_in_bytes);
+        auto fname = dict_file_name(col, size_in_bytes, c_type);
         col.file_map[KEY_DICT] = fname;
 		auto down_size = adjusted_down_size(col, size_in_bytes);
 		if (! utils::file_exists(fname) || rebuild ) {  // construct
@@ -204,8 +204,7 @@ public:
 				step_indices.push_back(i);
 			}
 			// //try randomly ordered max cov
-			if(t_method == RAND)
-				std::random_shuffle(step_indices.begin(), step_indices.end());
+			std::random_shuffle(step_indices.begin(), step_indices.end());
 			
 		    auto stop = hrclock::now();
 		    LOG(INFO) << "\t" << "1st pass runtime = " << duration_cast<milliseconds>(stop-start).count() / 1000.0f << " sec";
@@ -215,21 +214,25 @@ public:
 			step_mers.max_load_factor(0.1);
 
 			//prefill step_mers from the GOV2 bales history_mers?.sdsl hard code this file name, to be replaced by Matt later
-			std::string bale_file = "history_mers_BALE";
-			std::string bale_no = "5";//number to be changed, windows should be auto as well.
+			// std::string bale_file = "history_mers_BALE";
+			// std::string bale_no = "5";//number to be changed, windows should be auto as well.
 
-			std::string histroy_file = col.path + "/index/" + bale_file + bale_no; //to be manually changed
+			// std::string histroy_file = col.path + "/index/" + bale_file + bale_no; //to be manually changed
 
-			LOG(INFO) << "\t" << "Load history_mers from file " << histroy_file; 
+			// LOG(INFO) << "\t" << "Load history_mers from file " << histroy_file; 
 			// sdsl::load_from_file(rs,sketch_name);
-			sdsl::read_only_mapper<64> history_mapper(histroy_file);
-			auto itr = history_mapper.begin();
-			while(itr != history_mapper.end()) {
-				step_mers.emplace(*itr);
-				itr++;
+			// sdsl::read_only_mapper<64> history_mapper(histroy_file);
+			if(history_mers != NULL) {
+				auto itr = history_mers->begin();
+				while(itr != history_mers->end()) {
+					step_mers.emplace(*itr);
+					itr++;
+				}
+				LOG(INFO) << "\t" << "Prefill history done with mers size " << step_mers.size(); 
+			} else {
+				LOG(INFO) << "\t" << "No mers to prefill"; 
 			}
-			LOG(INFO) << "\t" << "Prefill history done with mers size " << step_mers.size(); 
-
+			
 			//process max cov
 			std::vector<uint64_t> picked_blocks;
 			LOG(INFO) << "\t" << "Second pass: perform ordered max coverage..."; 
