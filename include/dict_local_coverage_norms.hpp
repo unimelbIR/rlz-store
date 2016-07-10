@@ -16,45 +16,45 @@ template <
 uint32_t t_block_size = 1024,
 uint32_t t_estimator_block_size = 16,
 uint32_t t_down_size = 512,
-class t_norm = std::ratio<1,2>,
-ACCESS_TYPE t_method = SEQ
+class t_norm = std::ratio<1,2>
 >
 class dict_local_coverage_norms{
 public:
     static std::string type()
     {
-        return "dict_local_coverage_norms-"+ std::to_string(t_method)+"-" +std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
+        return "dict_local_coverage_norms-" + std::to_string(t_block_size)+"-"+ std::to_string(t_estimator_block_size);
     }
     static uint32_t adjusted_down_size(collection& col, uint64_t size_in_bytes)
     {
 		sdsl::read_only_mapper<8> text(col.file_map[KEY_TEXT]);
 		auto thres = (text.size()/size_in_bytes)/2;
         // return (thres >= t_down_size? thres : t_down_size);
-		return 1024*1024;   
+		return 512;   
  	}
  	
     static std::string container_type()
     {
         return std::to_string(t_estimator_block_size);
     }
-    static std::string dict_file_name(collection& col, uint64_t size_in_bytes)
+    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type)
     {
         auto size_in_mb = size_in_bytes / (1024 * 1024);
-	return col.path + "/index/" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl";
+		std::string ctype = "-rw" + std::to_string(c_type);
+		return col.path + "/index/" + col.text + "-" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl" + ctype;
     }
     static std::string container_file_name(collection& col, uint64_t size_in_bytes)
     {
         auto size_in_mb = size_in_bytes / (1024 * 1024);
-        return col.path + "/index/" + container_type() + ".sdsl";
+        return col.path + "/index/" + col.text + "-" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild,size_t size_in_bytes) {
+	static void create(collection& col, bool rebuild, size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> *history_mers = NULL) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
 
         // check if we store it already and load it
-        auto fname = dict_file_name(col, size_in_bytes);
+        auto fname = dict_file_name(col, size_in_bytes, c_type);
         col.file_map[KEY_DICT] = fname;
 		auto down_size = adjusted_down_size(col, size_in_bytes);
 		if (! utils::file_exists(fname) || rebuild ) {  // construct
@@ -205,8 +205,7 @@ public:
 				step_indices.push_back(i);
 			}
 			// //try randomly ordered max cov
-			if(t_method == RAND)
-				std::random_shuffle(step_indices.begin(), step_indices.end());
+			std::random_shuffle(step_indices.begin(), step_indices.end());
 			
 		    auto stop = hrclock::now();
 		    LOG(INFO) << "\t" << "1st pass runtime = " << duration_cast<milliseconds>(stop-start).count() / 1000.0f << " sec";

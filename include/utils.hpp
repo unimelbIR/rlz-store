@@ -146,6 +146,7 @@ std::string safe_print(t_itr itr, t_itr end)
     return str;
 }
 
+//added args parsing for dynamic RLZ
 typedef struct cmdargs {
     std::string collection_dir;
     size_t dict_size_in_bytes;
@@ -153,6 +154,10 @@ typedef struct cmdargs {
     bool rebuild;
     uint32_t threads;
     bool verify;
+    int num_bales; //-n
+    int window_size; //-w
+    int test_bale; //-b
+    std::string mode; //-m
 } cmdargs_t;
 
 void
@@ -167,6 +172,10 @@ print_usage(const char* program)
     fprintf(stdout, "  -t <threads>               : number of threads to use during factorization.\n");
     fprintf(stdout, "  -f <force rebuild>         : force rebuild of structures.\n");
     fprintf(stdout, "  -v <verify index>          : verify the factorization can be used to recover the text.\n");
+    fprintf(stdout, "  -n <number of bales in collection>   : input number of bales for dynamic RLZ.\n");
+    fprintf(stdout, "  -w <context bale window size>   : context size considered in dynamic RLZ.\n");
+    fprintf(stdout, "  -b <the test bale number>   : the input test bale number.\n");
+    fprintf(stdout, "  -m <mode to process bales: \"combine\" or \"cascade\" >   : the 1st mode is simply combining dictionaries, the 2nd considers historical dictonary content.\n");
 };
 
 cmdargs_t
@@ -180,7 +189,12 @@ parse_args(int argc, const char* argv[])
     args.threads = 1;
     args.dict_size_in_bytes = 0;
     args.pruned_dict_size_in_bytes = 0;
-    while ((op = getopt(argc, (char* const*)argv, "c:fdvt:s:p:")) != -1) {
+    args.num_bales = 1; //-n
+    args.window_size = 0; //-w
+    args.test_bale = 0; //-b
+    args.mode = "combine"; //-m
+
+    while ((op = getopt(argc, (char* const*)argv, "c:fdvt:s:p:n:w:b:m:")) != -1) {
         switch (op) {
         case 'c':
             args.collection_dir = optarg;
@@ -202,6 +216,18 @@ parse_args(int argc, const char* argv[])
             break;
         case 'v':
             args.verify = true;
+            break;
+        case 'n':
+            args.num_bales = std::stoul(optarg); //-n
+            break;
+        case 'w':
+            args.window_size = std::stoul(optarg); //-w
+            break;
+        case 'b':
+            args.test_bale = std::stoul(optarg); //-b
+            break;
+        case 'm':
+            std::string mode = optarg; //-m
             break;
         }
     }
