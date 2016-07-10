@@ -27,6 +27,7 @@ typedef struct cmdargs {
     std::string collection_dir;
     std::string input_dir;
     std::string input_file;
+    std::string output_file;
     uint32_t max_num_files;
     data_format format;
 } cmdargs_t;
@@ -38,6 +39,7 @@ print_usage(const char* program)
     fprintf(stdout, "where\n");
     fprintf(stdout, "  -c <collection directory>  : the directory the collection is stored.\n");
     fprintf(stdout, "  -i <input file>       : the raw input file.\n");
+    fprintf(stdout, "  -o <output file>       : the output file.\n");
     fprintf(stdout, "  -t <input directory>  : the trec input dir.\n");
     fprintf(stdout, "  -w <input directory>  : the warc input dir.\n");
     fprintf(stdout, "  -n <max num files>    : maximum number of files to parse.\n");
@@ -61,6 +63,10 @@ parse_args(int argc, const char* argv[])
         case 'i':
             args.input_file = optarg;
             args.format = data_format::raw;
+            break;
+        case 'o':
+            args.output_file = optarg;
+            // args.format = data_format::raw;
             break;
         case 't':
             args.input_dir = optarg;
@@ -172,7 +178,7 @@ int main(int argc, const char* argv[])
     cmdargs_t args = parse_args(argc, argv);
 
     utils::create_directory(args.collection_dir);
-    std::string output_file = args.collection_dir + "/" + KEY_PREFIX + KEY_TEXT;
+    std::string output_file = args.collection_dir + "/" + args.output_file;
 
     {
         auto out = sdsl::write_out_buffer<8>::create(output_file);
@@ -221,7 +227,7 @@ int main(int argc, const char* argv[])
     }
     {
         LOG(INFO) << "Writing document order file.";
-        std::string docorder_file = args.collection_dir + "/" + KEY_PREFIX + KEY_DOCORDER;
+        std::string docorder_file = args.collection_dir + "/" + args.output_file + KEY_DOCORDER;
         std::ofstream dof(docorder_file);
         sdsl::read_only_mapper<8> output(output_file);
         auto beg = output.begin();
