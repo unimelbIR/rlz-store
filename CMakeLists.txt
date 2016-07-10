@@ -70,8 +70,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 #add_executable(rlzs-create.x src/rlzs-create.cpp)
 #target_link_libraries(rlzs-create.x sdsl pthread divsufsort divsufsort64 zlib lzma lz4 bzip2)
 
-#add_executable(create-collection.x src/create-collection.cpp)
-#target_link_libraries(create-collection.x sdsl pthread zlib boost_system-mt boost_iostreams-mt boost_filesystem-mt boost_regex-mt boost_atomic-mt boost_thread-mt lz4 bzip2)
+add_executable(create-collection.x src/create-collection.cpp)
+target_link_libraries(create-collection.x sdsl pthread zlib boost_system-mt boost_iostreams-mt boost_filesystem-mt boost_regex-mt boost_atomic-mt boost_thread-mt lz4 bzip2)
 
 #add_executable(unit-tests.x src/unit-tests.cpp)
 #target_link_libraries(unit-tests.x sdsl pthread zlib gtest_main lzma lz4 bzip2)
