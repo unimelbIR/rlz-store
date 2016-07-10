@@ -29,7 +29,7 @@ struct collection {
     std::map<std::string, std::string> param_map;
     std::map<std::string, std::string> file_map;
     collection(const std::string& p, const std::string& t)
-        : path(p + "/"), text(t)
+        : path(p), text(t)
     {
         if (!utils::directory_exists(path)) {
             throw std::runtime_error("Collection path not found.");
@@ -46,15 +46,15 @@ struct collection {
 
         /* make sure the necessary files are present */
         // auto file_name = path + "/" + KEY_PREFIX + KEY_TEXT;
-        auto file_name = path + "/" + text;
+        auto file_name = path + text;
         file_map[KEY_TEXT] = file_name;
         // if (!utils::file_exists(path + "/" + KEY_PREFIX + KEY_TEXT)) {
-        if (!utils::file_exists(path + "/" + text)) {
+        if (!utils::file_exists(path + text)) {
             LOG(FATAL) << "Collection path does not contain text.";
             throw std::runtime_error("Collection path does not contain text.");
         } else {
             sdsl::int_vector_mapped_buffer<8> text(file_map[KEY_TEXT]);
-            LOG(INFO) << "Found input text with size " << text.size() / (1024.0 * 1024.0) << " MiB";
+            LOG(INFO) << "Found input text = " << file_map[KEY_TEXT] << " with size " << text.size() / (1024.0 * 1024.0) << " MiB";
         }
     }
 
