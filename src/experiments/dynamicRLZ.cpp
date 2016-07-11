@@ -133,12 +133,26 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
            		compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
              return store_bits_compressed_dict;
         } else {
-            auto rlz_store = rlz_store_static_single::builder{}
+            auto dict_store = rlz_store_static_single::builder{}
                     .set_rebuild(args.rebuild)
                     .set_threads(args.threads)
                     .set_dict_size(dict_size_in_bytes)
                     .build_or_load(col, NULL, ctype);
-            return 0;
+            
+            size_t bits_compressed_dict = 0;
+            {
+                const uint8_t* dict = (const uint8_t*) dict_store.data();
+                size_t dict_size = dict_store.size();
+                std::vector<uint8_t> dict_buf(dict_size*2);
+                uint8_t* out_buf = dict_buf.data();
+                size_t out_len = dict_buf.size();
+                int cok = compress2(out_buf,&out_len,dict,dict_size,9);
+                if(cok != Z_OK) {
+                    LOG(FATAL) << "error compressing dictionary.";
+                }
+                bits_compressed_dict = out_len * 8;
+            }
+            return bits_compressed_dict;
         }
 }
 
@@ -163,12 +177,26 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
             return store_bits_compressed_dict;
         } else {
-            auto rlz_store = rlz_store_static_multi::builder{}
+            auto dict_store = rlz_store_static_multi::builder{}
                     .set_rebuild(args.rebuild)
                     .set_threads(args.threads)
                     .set_dict_size(dict_size_in_bytes)
                     .build_or_load(col, NULL, ctype);
-            return 0;
+
+            size_t bits_compressed_dict = 0;
+            {
+                const uint8_t* dict = (const uint8_t*) dict_store.data();
+                size_t dict_size = dict_store.size();
+                std::vector<uint8_t> dict_buf(dict_size*2);
+                uint8_t* out_buf = dict_buf.data();
+                size_t out_len = dict_buf.size();
+                int cok = compress2(out_buf,&out_len,dict,dict_size,9);
+                if(cok != Z_OK) {
+                    LOG(FATAL) << "error compressing dictionary.";
+                }
+                bits_compressed_dict = out_len * 8;
+            }
+            return bits_compressed_dict;
         }
 }
 
