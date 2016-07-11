@@ -227,7 +227,7 @@ parse_args(int argc, const char* argv[])
             args.test_bale = std::stoul(optarg); //-b
             break;
         case 'm':
-            std::string mode = optarg; //-m
+            args.mode = optarg; //-m
             break;
         }
     }
