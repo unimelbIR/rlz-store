@@ -53,7 +53,7 @@ void addHistMers(std::unordered_set<uint64_t> &history_mers, std::string inFile)
     LOG(INFO) << "\t" << "History  time = " << duration_cast<milliseconds>(stop-start).count() / 1000.0f << " sec";
 }
 
-void combineDicts(const std::vector<std::string>& file_dicts, std::string file_combined, int start) {
+void combineDicts(const std::vector<std::string>& file_dicts, std::string& file_combined, int start) {
     //read and write
     auto begin = hrclock::now();
     auto out = sdsl::write_out_buffer<8>::create(file_combined);
@@ -259,8 +259,11 @@ int main(int argc, const char* argv[])
         LOG(INFO) << "\t" << "Context Size = " << w;
         LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
-        if(! utils::file_exists(out_file) || rebuild )
+        if(! utils::file_exists(out_file) || rebuild ) {
+            LOG(INFO) << "\t" << "no of files to combine = " << dicts.size();
             combineDicts(dicts, out_file, start);
+        }
+            
 
         //factorize for results
         create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results

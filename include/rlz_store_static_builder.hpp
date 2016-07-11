@@ -115,7 +115,7 @@ public:
          // (3) load dictionary from disk
         LOG(INFO) << "\tLoad dictionary";
         sdsl::load_from_file(dict, col.file_map[KEY_DICT]);
-	auto stop = hrclock::now();
+	    auto stop = hrclock::now();
         LOG(INFO) << "RLZ construction dictionary only complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
         return dict;
     }
