@@ -213,13 +213,13 @@ int main(int argc, const char* argv[])
     //simple combine mode
     if(mode == "combine") {
         size_t combined_dict_size_compressed = 0; //will store the test bale dict size in bits
-        for (int i = 0; i <= b; i++) {
+        auto start = std::max(0,b-w);
+        for (int i = start; i <= b; i++) {
             collection col(args.collection_dir, std::to_string(i));
             combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,args,false);
             dicts.push_back(col.file_map[KEY_DICT]);
         }
         //combine setup     
-        auto start = std::max(0,b-w);
         auto real_w = b-start;
         auto c_size = dict_size * (real_w + 1);
         collection col(args.collection_dir, std::to_string(b));
