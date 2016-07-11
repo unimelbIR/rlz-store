@@ -57,11 +57,11 @@ void combineDicts(const std::vector<std::string>& file_dicts, std::string& file_
     //read and write
     auto begin = hrclock::now();
     auto out = sdsl::write_out_buffer<8>::create(file_combined);
-
+    LOG(INFO) << "\t" << " output file name to combine = " << file_combined;
     //read into data structure
     for(size_t i=start;i<file_dicts.size();i++) {
         sdsl::read_only_mapper<8> dict(file_dicts[i]); 
-
+	LOG(INFO) << "\t" << "no of files to combine = " << file_dicts.size();
         for(size_t j=0;j<dict.size()-1;j++) {
             out.push_back(dict[j]);
         }
@@ -236,7 +236,7 @@ int main(int argc, const char* argv[])
         history_mers.max_load_factor(0.1); //make faster by losing memory
         size_t combined_dict_size_compressed = 0; //will store the test bale dict size in bits
         auto start = std::max(0,b-w);
-        for (int i = start; i <= b; i++) {
+        for (int i = 0; i <= b; i++) {
             collection col(args.collection_dir, std::to_string(i));
             combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false);
             dicts.push_back(col.file_map[KEY_DICT]);
@@ -260,7 +260,6 @@ int main(int argc, const char* argv[])
         LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
         if(! utils::file_exists(out_file) || rebuild ) {
-            LOG(INFO) << "\t" << "no of files to combine = " << dicts.size();
             combineDicts(dicts, out_file, start);
         }
             
