@@ -215,7 +215,7 @@ int main(int argc, const char* argv[])
     if(mode == "combine") {
         size_t combined_dict_size_compressed = 0; //will store the test bale dict size in bits
         auto start = std::max(0,b-w);
-	 for (int i = start; i <= b; i++) {
+        for (int i = start; i <= b; i++) {
             collection col(args.collection_dir, std::to_string(i));
             combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,args,false,false);
             dicts.push_back(col.file_map[KEY_DICT]);
