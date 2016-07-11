@@ -261,7 +261,7 @@ int main(int argc, const char* argv[])
 
         if(! utils::file_exists(out_file) || rebuild ) {
             combineDicts(dicts, out_file, start);
-        }
+        } else LOG(INFO) << "\t" << "Combined file exist!";
             
 
         //factorize for results
@@ -330,6 +330,8 @@ int main(int argc, const char* argv[])
 
         if(! utils::file_exists(out_file) || rebuild )
             combineDicts(dicts, out_file, start);
+        else LOG(INFO) << "\t" << "Combined file exist!";
+        
         std::unordered_set<uint64_t> history_mers;
         history_mers.max_load_factor(0.1); //make faster by losing memory
 
