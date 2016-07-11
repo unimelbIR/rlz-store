@@ -171,10 +171,10 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
             std::string index_name = "GOV2S-WWW-CASCADE-"  + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
 //            verify_index(col, rlz_store);
-            // if(isCombinedDict)
-            //     compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
-            // else
-            compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
+            if(isCombinedDict)
+                compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
+            else
+                compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
             return store_bits_compressed_dict;
         } else {
             auto dict_store = rlz_store_static_multi::builder{}
