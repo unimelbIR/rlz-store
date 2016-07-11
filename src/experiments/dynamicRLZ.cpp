@@ -143,6 +143,7 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
             {
                 const uint8_t* dict = (const uint8_t*) dict_store.data();
                 size_t dict_size = dict_store.size();
+                LOG(INFO) << "\t Dict Size = " << dict_size;
 		        std::vector<uint8_t> dict_buf(dict_size*2);
                 uint8_t* out_buf = dict_buf.data();
                 size_t out_len = dict_buf.size();
@@ -187,6 +188,7 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             {
                 const uint8_t* dict = (const uint8_t*) dict_store.data();
 		        size_t dict_size = dict_store.size();
+                LOG(INFO) << "\t Dict Size = " << dict_size;
                 std::vector<uint8_t> dict_buf(dict_size*2);
                 uint8_t* out_buf = dict_buf.data();
                 size_t out_len = dict_buf.size();
