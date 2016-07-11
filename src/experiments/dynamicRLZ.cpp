@@ -157,7 +157,7 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
 }
 
 //return the compressed dict size
-size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool toFactorize)
+size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool isCombinedDict, bool toFactorize, size_t bits_compressed_dict = 0)
 {    /* create rlz index */
         if(toFactorize) { //if factorization needed
             auto rlz_store = rlz_store_static_multi::builder{}
@@ -301,7 +301,7 @@ int main(int argc, const char* argv[])
             // if(history_mers.empty())
             //     combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
             // else
-            combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
+            combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false, false);
             
             dicts.push_back(col.file_map[KEY_DICT]);
         }
@@ -331,8 +331,10 @@ int main(int argc, const char* argv[])
         std::unordered_set<uint64_t> history_mers;
         history_mers.max_load_factor(0.1); //make faster by losing memory
 
-        //factorize for results: warning: may overwrite exsiting combined dicts!
-        create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
+        // //factorize for results: warning: may overwrite exsiting combined dicts!
+        // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
+        //  //factorize for results
+        create_indexes_cascade(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
     }
 
     /* create rlz indices */
