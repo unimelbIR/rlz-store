@@ -48,7 +48,7 @@ public:
         return col.path + "/index/" + col.text + "-" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild, size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> *history_mers = NULL) {
+	static void create(collection& col, bool rebuild, size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
