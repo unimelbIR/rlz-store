@@ -141,11 +141,9 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
             
             size_t bits_compressed_dict = 0;
             {
-		LOG(INFO) << "hello";
                 const uint8_t* dict = (const uint8_t*) dict_store->data();
                 size_t dict_size = dict_store->size();
-                LOG(INFO) << "dict size is = " << dict_size;
-		std::vector<uint8_t> dict_buf(dict_size*2);
+		        std::vector<uint8_t> dict_buf(dict_size*2);
                 uint8_t* out_buf = dict_buf.data();
                 size_t out_len = dict_buf.size();
                 int cok = compress2(out_buf,&out_len,dict,dict_size,9);
@@ -188,8 +186,7 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             size_t bits_compressed_dict = 0;
             {
                 const uint8_t* dict = (const uint8_t*) dict_store->data();
-		size_t dict_size = dict_store->size();
-		LOG(INFO) << "dict size is = " << dict_size;
+		        size_t dict_size = dict_store->size();
                 std::vector<uint8_t> dict_buf(dict_size*2);
                 uint8_t* out_buf = dict_buf.data();
                 size_t out_len = dict_buf.size();

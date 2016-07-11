@@ -102,10 +102,10 @@ public:
     }
 
         // rlz_store_static build_or_load(collection& col) const
-    sdsl::int_vector<8>* build_or_load(collection& col, std::unordered_set<uint64_t> *history_mers, int type) const
+    sdsl::int_vector<8> build_or_load(collection& col, std::unordered_set<uint64_t> *history_mers, int type) const
     {
         auto start = hrclock::now();
-        sdsl::int_vector<8> *dict;
+        sdsl::int_vector<8> dict;
         // (1) create dictionary based on parametrized
         // dictionary creation strategy if necessary
         LOG(INFO) << "Create dictionary (" << dictionary_creation_strategy::type() << ")";
@@ -115,6 +115,7 @@ public:
          // (3) load dictionary from disk
         LOG(INFO) << "\tLoad dictionary";
         sdsl::load_from_file(dict, col.file_map[KEY_DICT]);
+        LOG(INFO) << "\t Dict Size = " << dict.data().size();
         auto stop = hrclock::now();
         LOG(INFO) << "RLZ construction dictionary only complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
         return dict;
