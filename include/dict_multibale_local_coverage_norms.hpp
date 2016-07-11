@@ -48,7 +48,7 @@ public:
         return col.path + "/index/"  + col.text + "-" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild,size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> *history_mers = NULL) {
+	static void create(collection& col, bool rebuild,size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
@@ -222,13 +222,13 @@ public:
 			// LOG(INFO) << "\t" << "Load history_mers from file " << histroy_file; 
 			// sdsl::load_from_file(rs,sketch_name);
 			// sdsl::read_only_mapper<64> history_mapper(histroy_file);
-			if(history_mers != NULL) {
-				auto itr = history_mers->begin();
-				while(itr != history_mers->end()) {
+			if(!history_mers.empty()) {
+				auto itr = history_mers.begin();
+				while(itr != history_mers.end()) {
 					step_mers.emplace(*itr);
 					itr++;
 				}
-				LOG(INFO) << "\t" << "Prefill history done with mers size " << step_mers.size(); 
+				LOG(INFO) << "\t" << "Prefill history done with total mers size " << step_mers.size(); 
 			} else {
 				LOG(INFO) << "\t" << "No mers to prefill"; 
 			}
