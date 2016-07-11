@@ -40,6 +40,7 @@ private:
     bit_istream<sdsl::int_vector_mapper<1, std::ios_base::in> > m_factor_stream;
     sdsl::int_vector<8> m_dict;
     block_map_type m_blockmap;
+    bool factorization = true;
 
 public:
     enum { block_size = t_factorization_block_size };
@@ -67,31 +68,31 @@ public:
     }
 
     rlz_store_static() = delete;
+    rlz_store_static(){}
     rlz_store_static(rlz_store_static&&) = default;
     rlz_store_static& operator=(rlz_store_static&&) = default;
     rlz_store_static(collection& col)
-        : m_factored_text(col.file_map[KEY_FACTORIZED_TEXT])
-        , m_factor_stream(m_factored_text) // (1) mmap factored text
-    {
-        LOG(INFO) << "Loading RLZ store into memory";
-        m_factor_file = col.file_map[KEY_FACTORIZED_TEXT];
-        // (2) load the block map
-        LOG(INFO) << "\tLoad block map";
-        sdsl::load_from_file(m_blockmap, col.file_map[KEY_BLOCKMAP]);
+	: m_factored_text(col.file_map[KEY_FACTORIZED_TEXT])
+        , m_factor_stream(m_factored_text) // (1) mmap factored text 
+	{
+                 LOG(INFO) << "Loading RLZ store into memory";
+                 m_factor_file = col.file_map[KEY_FACTORIZED_TEXT];
+                 // (2) load the block map
+                 LOG(INFO) << "\tLoad block map";
+                 sdsl::load_from_file(m_blockmap, col.file_map[KEY_BLOCKMAP]);
+        	// (3) load dictionary from disk
+        	LOG(INFO) << "\tLoad dictionary";
+        	m_dict_hash = col.param_map[PARAM_DICT_HASH];
+        	m_dict_file = col.file_map[KEY_DICT];
+        	sdsl::load_from_file(m_dict, col.file_map[KEY_DICT]);
+        	{
+            		LOG(INFO) << "\tDetermine text size";
+            		const sdsl::int_vector_mapper<8, std::ios_base::in> text(col.file_map[KEY_TEXT]);
+            		text_size = text.size();
+       		 }
+        	LOG(INFO) << "RLZ store ready";
 
-        // (3) load dictionary from disk
-        LOG(INFO) << "\tLoad dictionary";
-        m_dict_hash = col.param_map[PARAM_DICT_HASH];
-        m_dict_file = col.file_map[KEY_DICT];
-        sdsl::load_from_file(m_dict, col.file_map[KEY_DICT]);
-        {
-            LOG(INFO) << "\tDetermine text size";
-            const sdsl::int_vector_mapper<8, std::ios_base::in> text(col.file_map[KEY_TEXT]);
-            text_size = text.size();
-        }
-        LOG(INFO) << "RLZ store ready";
-    }
-
+	}
     auto factors_begin() const -> factor_iterator<decltype(*this)>
     {
         return factor_iterator<decltype(*this)>(*this, 0, 0);
