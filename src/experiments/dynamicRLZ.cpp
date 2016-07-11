@@ -126,7 +126,7 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
         	uint32_t text_size_mib = rlz_store.size() / (1024*1024);
         	uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
         	std::string index_name = "GOV2S-WWW-COMBINE-" + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
-        	verify_index(col, rlz_store);
+  //      	verify_index(col, rlz_store);
         	if(isCombinedDict)
           	  	compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
         	else
@@ -171,7 +171,7 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             uint32_t text_size_mib = rlz_store.size() / (1024*1024);
             uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
             std::string index_name = "GOV2S-WWW-CASCADE-"  + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
-            verify_index(col, rlz_store);
+//            verify_index(col, rlz_store);
             // if(isCombinedDict)
             //     compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
             // else
@@ -255,7 +255,7 @@ int main(int argc, const char* argv[])
 
         LOG(INFO) << "\t" << "Finally......";
         LOG(INFO) << "\t" << "Combining simple dictionaries for Bale = " << b;
-        LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024));
+        LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
         LOG(INFO) << "\t" << "Context Size = " << w;
         LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
@@ -322,7 +322,7 @@ int main(int argc, const char* argv[])
 
         LOG(INFO) << "\t" << "Finally......";
         LOG(INFO) << "\t" << "Combining cascaded dictionaries for Bale = " << b;
-        LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024));
+        LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
         LOG(INFO) << "\t" << "Context Size = " << w;
         LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
