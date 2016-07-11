@@ -11,16 +11,12 @@
 #include <cstdio>
 #include <unordered_set>
 #include "logging.hpp"
-#include "wt_flat.hpp"
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include "indexes.hpp"
+#include "experiments/rlz_types_wsdm.hpp"
 
 //to change to faster factorization by Matt
-using www_csa_type = sdsl::csa_wt<wt_flat<sdsl::bit_vector>, 1, 4096>;
-using csa_type = sdsl::csa_wt<sdsl::wt_huff<sdsl::bit_vector_il<64> >, 4, 4096>;
-
 INITIALIZE_EASYLOGGINGPP
 
 //function to load k-mers
@@ -118,22 +114,15 @@ void compute_archive_ratio(collection& col, std::ofstream &out, t_idx& idx, size
 //return the compressed dict size
 size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, utils::cmdargs_t& args, bool isCombinedDict, bool toFactorize, size_t bits_compressed_dict = 0)
 {    /* create rlz index */
-    const uint32_t factorization_blocksize = 64 * 1024;
-    {
-        auto rlz_store = rlz_store_static<dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>,
-                    dict_prune_none,
-                    dict_index_csa<www_csa_type>, //to update to sa
-                    factorization_blocksize,
-                    false,
-                    factor_select_first,
-                    factor_coder_blocked<3, coder::zlib<9>, coder::zlib<9>, coder::zlib<9>>,
-                    block_map_uncompressed>::builder{}
+
+        if(toFactorize) { //if factorization needed     
+            auto rlz_store = rlz_store_static_single::builder{}
                     .set_rebuild(args.rebuild)
                     .set_threads(args.threads)
                     .set_dict_size(dict_size_in_bytes)
                     .build_or_load(col, NULL, ctype, toFactorize);
-        size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
-	if(toFactorize) { //if factorization needed            
+            size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
+	   
         	uint32_t text_size_mib = rlz_store.size() / (1024*1024);
         	uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
         	std::string index_name = "GOV2S-WWW-COMBINE-" + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
@@ -142,32 +131,28 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
           	  	compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
         	else
            		compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
+             return store_bits_compressed_dict;
+        } else {
+            auto rlz_store = rlz_store_static_single::builder{}
+                    .set_rebuild(args.rebuild)
+                    .set_threads(args.threads)
+                    .set_dict_size(dict_size_in_bytes)
+                    .build_or_load(col, NULL, ctype);
+            return 0;
         }
-	return store_bits_compressed_dict;
-    }
 }
 
 //return the compressed dict size
 size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> *history_mers, utils::cmdargs_t& args, bool toFactorize)
 {    /* create rlz index */
-    const uint32_t factorization_blocksize = 64 * 1024;
-    {
-        auto rlz_store = rlz_store_static<dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>,
-                    dict_prune_none,
-                    dict_index_csa<www_csa_type>, //to update to sa
-                    factorization_blocksize,
-                    false,
-                    factor_select_first,
-                    factor_coder_blocked<3, coder::zlib<9>, coder::zlib<9>, coder::zlib<9>>,
-                    block_map_uncompressed>::builder{}
-                    .set_rebuild(args.rebuild)
-                    .set_threads(args.threads)
-                    .set_dict_size(dict_size_in_bytes)
-                    .build_or_load(col, history_mers, ctype, toFactorize);
-
-        size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
-
         if(toFactorize) { //if factorization needed
+            auto rlz_store = rlz_store_static_multi::builder{}
+                        .set_rebuild(args.rebuild)
+                        .set_threads(args.threads)
+                        .set_dict_size(dict_size_in_bytes)
+                        .build_or_load(col, history_mers, ctype, toFactorize);
+
+            size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
             uint32_t text_size_mib = rlz_store.size() / (1024*1024);
             uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
             std::string index_name = "GOV2S-WWW-CASCADE-"  + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
@@ -175,10 +160,16 @@ size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ct
             // if(isCombinedDict)
             //     compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
             // else
-                compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
+            compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
+            return store_bits_compressed_dict;
+        } else {
+            auto rlz_store = rlz_store_static_multi::builder{}
+                    .set_rebuild(args.rebuild)
+                    .set_threads(args.threads)
+                    .set_dict_size(dict_size_in_bytes)
+                    .build_or_load(col, NULL, ctype);
+            return 0;
         }
-        return store_bits_compressed_dict;
-    }
 }
 
 

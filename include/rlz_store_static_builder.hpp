@@ -102,7 +102,7 @@ public:
     }
 
         // rlz_store_static build_or_load(collection& col) const
-    void build_or_load(collection& col, std::unordered_set<uint64_t> *history_mers, int type) const
+    int build_or_load(collection& col, std::unordered_set<uint64_t> *history_mers, int type) const
     {
         auto start = hrclock::now();
 
@@ -120,6 +120,7 @@ public:
 
         auto stop = hrclock::now();
         LOG(INFO) << "RLZ construction dictionary only complete. time = " << duration_cast<seconds>(stop - start).count() << " sec";
+        return 0;
     }
 
     rlz_store_static load(collection& col) const
