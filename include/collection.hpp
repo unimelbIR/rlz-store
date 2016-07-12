@@ -78,4 +78,10 @@ struct collection {
         auto tmp_folder = path + "/tmp/";
         utils::remove_all_files_in_dir(tmp_folder);
     }
+
+    void clearFactors() {
+        auto tmp_folder = path + "/tmp/";
+        auto file = path + "/index/" + "factorizor*";
+        utils::remove_file(file);
+    }
 };

@@ -230,42 +230,65 @@ int main(int argc, const char* argv[])
     }
     LOG(INFO) << "\t" << "Entering Dynamic Mode = " << mode;
 
+    //independent factorization
+    if(mode == "independent") { //for external parallel calls to efficiently building dicts as the first step, changing b
+        std::unordered_set<uint64_t> history_mers;
+        history_mers.max_load_factor(0.1); //make faster by losing memory
+        collection col(args.collection_dir, std::to_string(b));
+        create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false);
+        // if(b == 0) 
+        // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
+        // dicts.push_back(col.file_map[KEY_DICT]);
+    }
+
     //simple combine mode
-    if(mode == "combine") {
+    if(mode == "combine") { //for external parallel calls to efficiently building dicts as the first step
         std::unordered_set<uint64_t> history_mers;
         history_mers.max_load_factor(0.1); //make faster by losing memory
         size_t combined_dict_size_compressed = 0; //will store the test bale dict size in bits
-        auto start = std::max(0,b-w);
-        for (int i = 0; i <= b; i++) {
-            collection col(args.collection_dir, std::to_string(i));
-            combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false);
-            dicts.push_back(col.file_map[KEY_DICT]);
+        for (int i = 0; i <= b; i++) { //load dic file names
+            // collection col(args.collection_dir, std::to_string(b)); 
+            // combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false); //created already
+            // if(b == 0) 
+            // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
+            collection col(args.collection_dir, std::to_string(i)); 
+            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, i));
+            if(i == b) { //testing bale compress dict
+                combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false); //created already
+            }
         }
-        //combine setup     
-        auto real_w = b-start;
-        auto c_size = dict_size * (real_w + 1);
-        collection col(args.collection_dir, std::to_string(b));
-        std::string out_file = dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w);
 
-        out << "Finally......" << std::endl;
-        out << "Combining simple dictionaries for Bale = " << b << std::endl;
-        out << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << std::endl;
-        out << "Context Size = " << w << std::endl;
-        out << "Real test bale Context Size = " << real_w << std::endl;
+        for (int j = w; j >= 0; j--)
+        {
+            out << "Entering Context = " << j << std::endl;
+            LOG(INFO) << "\t" << "Entering Context = " << j;
+            auto start = std::max(0,b-j);
+            //combine setup     
+            auto real_w = b-start;
+            auto c_size = dict_size * (real_w + 1);
+            collection col(args.collection_dir, std::to_string(b));
+            std::string out_file = dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w);
 
-        LOG(INFO) << "\t" << "Finally......";
-        LOG(INFO) << "\t" << "Combining simple dictionaries for Bale = " << b;
-        LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
-        LOG(INFO) << "\t" << "Context Size = " << w;
-        LOG(INFO) << "\t" << "Real Context Size = " << real_w;
+            out << "Finally......" << std::endl;
+            out << "Combining simple dictionaries for Bale = " << b << std::endl;
+            out << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << std::endl;
+            out << "Context Size = " << j << std::endl;
+            out << "Real test bale Context Size = " << real_w << std::endl;
 
-        if(! utils::file_exists(out_file) || rebuild ) {
-            combineDicts(dicts, out_file, start);
-        } else LOG(INFO) << "\t" << "Combined file exist!";
-            
+            LOG(INFO) << "\t" << "Finally......";
+            LOG(INFO) << "\t" << "Combining simple dictionaries for Bale = " << b;
+            LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
+            LOG(INFO) << "\t" << "Context Size = " << j;
+            LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
-        //factorize for results
-        create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
+            if(! utils::file_exists(out_file) || rebuild ) {
+                combineDicts(dicts, out_file, start);
+            } else LOG(INFO) << "\t" << "Combined file exist!";
+                
+            //factorize for results
+            create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
+            col.clearFactors();
+        }
     } 
 
     //more complicated cascade mode
