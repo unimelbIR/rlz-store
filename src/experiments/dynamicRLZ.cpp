@@ -252,12 +252,12 @@ int main(int argc, const char* argv[])
             // if(b == 0) 
             // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
             collection col(args.collection_dir, std::to_string(i)); 
-            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, i));
+            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, 0));
             if(i == b) { //testing bale compress dict
                 combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false); //created already
             }
         }
-
+        // LOG(INFO) << "\t" << "Dict File names = " << dicts;
         for (int j = w; j >= 0; j--)
         {
             out << "Entering Context = " << j << std::endl;
