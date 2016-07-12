@@ -367,6 +367,7 @@ int main(int argc, const char* argv[])
             // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
             //  //factorize for results
             create_indexes_cascade(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
+            dicts.clear();
         }
     }
 
