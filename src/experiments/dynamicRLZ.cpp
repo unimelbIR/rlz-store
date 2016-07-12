@@ -287,7 +287,7 @@ int main(int argc, const char* argv[])
                 
             //factorize for results
             create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
-            col.clearFactors();
+//            col.clearFactors();
         }
     } 
 
