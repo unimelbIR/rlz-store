@@ -36,7 +36,7 @@ public:
     {
         return std::to_string(t_estimator_block_size);
     }
-    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type)
+    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type, int isCombined = 0)
     {
         auto size_in_mb = size_in_bytes / (1024 * 1024);
 		std::string ctype = "-rw" + std::to_string(c_type);
@@ -48,7 +48,7 @@ public:
         return col.path + "/index/" + col.text + "-" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild, size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers) {
+	static void create(collection& col, bool rebuild, size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers, int isCombined = 0) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
@@ -69,7 +69,7 @@ public:
             size_t scale =  n / budget_bytes; //hopefully much smaller than the adjusted, may not be divisible, can fix later
             size_t sample_step = scale * t_block_size;
 		    int thres = 1; 
-		    if(scale >= 8*1024) thres = 16;
+		    if(scale >= 8*1024) thres = 16; 
 		    else if(scale >= 1024 && scale < 8*1024) thres = 8;
 		    else if(scale >= 512 && scale < 1024) thres = 4; //
 		    else thres = 2; //minimum saving half

@@ -61,14 +61,14 @@ public:
     }
 
     // rlz_store_static build_or_load(collection& col) const
-    rlz_store_static build_or_load(collection& col, std::unordered_set<uint64_t> &history_mers, int type, bool toFactorize) const
+    rlz_store_static build_or_load(collection& col, std::unordered_set<uint64_t> &history_mers, int type, int combined) const
     {
         auto start = hrclock::now();
 
         // (1) create dictionary based on parametrized
         // dictionary creation strategy if necessary
         LOG(INFO) << "Create dictionary (" << dictionary_creation_strategy::type() << ")";
-        dictionary_creation_strategy::create(col, rebuild, dict_size_bytes, type, history_mers);
+        dictionary_creation_strategy::create(col, rebuild, dict_size_bytes, type, history_mers, combined);
         LOG(INFO) << "Dictionary hash before pruning '" << col.param_map[PARAM_DICT_HASH] << "'";
 
         // (2) prune the dictionary if necessary
