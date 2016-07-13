@@ -112,26 +112,24 @@ void compute_archive_ratio(collection& col, std::ofstream &out, t_idx& idx, size
 }
 
 //return the compressed dict size
-size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool isCombinedDict, bool toFactorize, size_t bits_compressed_dict = 0)
+size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool isFactorizeCombined, size_t bits_compressed_dict = 0)
 {    /* create rlz index */
 
-        if(toFactorize) { //if factorization needed     
+        if(isFactorizeCombined) { //if factorization needed     
             auto rlz_store = rlz_store_static_single::builder{}
                     .set_rebuild(args.rebuild)
                     .set_threads(args.threads)
                     .set_dict_size(dict_size_in_bytes)
-                    .build_or_load(col, history_mers, ctype, toFactorize);
-            size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
+                    .build_or_load(col, history_mers, ctype, 1);
+            // size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
 	   
         	uint32_t text_size_mib = rlz_store.size() / (1024*1024);
         	uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
         	std::string index_name = "GOV2S-WWW-COMBINE-" + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
   //      	verify_index(col, rlz_store);
-        	if(isCombinedDict)
-          	  	compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
-        	else
-           		compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
-             return store_bits_compressed_dict;
+          	
+            compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
+        	return bits_compressed_dict;
         } else {
             auto dict_store = rlz_store_static_single::builder{}
                     .set_rebuild(args.rebuild)
@@ -157,25 +155,22 @@ size_t create_indexes_combine(collection& col, size_t dict_size_in_bytes, int ct
 }
 
 //return the compressed dict size
-size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool isCombinedDict, bool toFactorize, size_t bits_compressed_dict = 0)
+size_t create_indexes_cascade(collection& col, size_t dict_size_in_bytes, int ctype, std::ofstream &out, std::unordered_set<uint64_t> &history_mers, utils::cmdargs_t& args, bool isFactorizeCombined, size_t bits_compressed_dict = 0)
 {    /* create rlz index */
-        if(toFactorize) { //if factorization needed
+        if(isFactorizeCombined) { //if factorization needed
             auto rlz_store = rlz_store_static_multi::builder{}
                         .set_rebuild(args.rebuild)
                         .set_threads(args.threads)
                         .set_dict_size(dict_size_in_bytes)
-                        .build_or_load(col, history_mers, ctype, toFactorize);
+                        .build_or_load(col, history_mers, ctype, 1);
 
-            size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
+            // size_t store_bits_compressed_dict = zlib_dict_bits(rlz_store);
             uint32_t text_size_mib = rlz_store.size() / (1024*1024);
             uint32_t dict_size_mib = dict_size_in_bytes / (1024*1024);
             std::string index_name = "GOV2S-WWW-CASCADE-"  + std::to_string(text_size_mib) + "-C" + col.text + "-rw" + std::to_string(ctype) + "-" + std::to_string(dict_size_mib);
-//            verify_index(col, rlz_store);
-            if(isCombinedDict)
-                compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
-            else
-                compute_archive_ratio(col,out,rlz_store,store_bits_compressed_dict,index_name);
-            return store_bits_compressed_dict;
+//           verify_index(col, rlz_store);
+            compute_archive_ratio(col,out,rlz_store,bits_compressed_dict,index_name); //not using compressed combined dict size
+            return bits_compressed_dict;
         } else {
             auto dict_store = rlz_store_static_multi::builder{}
                     .set_rebuild(args.rebuild)
@@ -235,7 +230,7 @@ int main(int argc, const char* argv[])
         std::unordered_set<uint64_t> history_mers;
         history_mers.max_load_factor(0.1); //make faster by losing memory
         collection col(args.collection_dir, std::to_string(b));
-        create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false);
+        create_indexes_combine(col,dict_size,0,out,history_mers,args,false);
         // if(b == 0) 
         // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
         // dicts.push_back(col.file_map[KEY_DICT]);
@@ -252,9 +247,9 @@ int main(int argc, const char* argv[])
             // if(b == 0) 
             // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
             collection col(args.collection_dir, std::to_string(i)); 
-            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, 0));
+            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, 0, 0));
             if(i == b) { //testing bale compress dict
-                combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false,false); //created already
+                combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false); //created already
             }
         }
         // LOG(INFO) << "\t" << "Dict File names = " << dicts;
@@ -267,7 +262,11 @@ int main(int argc, const char* argv[])
             auto real_w = b-start;
             auto c_size = dict_size * (real_w + 1);
             collection col(args.collection_dir, std::to_string(b));
-            std::string out_file = dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w);
+            std::string out_file = "";
+            if(dicts.size() == 1)
+                out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
+            else
+                out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
 
             out << "Finally......" << std::endl;
             out << "Combining simple dictionaries for Bale = " << b << std::endl;
@@ -286,8 +285,8 @@ int main(int argc, const char* argv[])
             } else LOG(INFO) << "\t" << "Combined file exist!";
                 
             //factorize for results
-            create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
-//            col.clearFactors();
+            create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, combined_dict_size_compressed);  //factorise for compression results
+            // col.clearFactors();
         }
     } 
 
@@ -314,7 +313,7 @@ int main(int argc, const char* argv[])
                     collection col(args.collection_dir, std::to_string(h));
                     std::string c_type = "-rw"+ std::to_string(real_w);
 
-                    std::string hist_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w);
+                    std::string hist_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w, 0);
                     if(utils::file_exists(hist_file))
                         addHistMers(history_mers, hist_file);
                     else {
@@ -331,7 +330,7 @@ int main(int argc, const char* argv[])
                 // if(history_mers.empty())
                 //     combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
                 // else
-                combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false, false);
+                combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
                 
                 dicts.push_back(col.file_map[KEY_DICT]);
             }
@@ -342,7 +341,11 @@ int main(int argc, const char* argv[])
             auto c_size = dict_size * (real_w + 1);
             collection col(args.collection_dir, std::to_string(b));
             std::string c_type = "-rw"+ std::to_string(real_w);
-            std::string out_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w);
+            std::string out_file = "";
+            if(dicts.size() == 1)
+                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
+            else
+                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
 
             out << "Finally......" << std::endl;
             out << "Combining cascaded dictionaries for Bale = " << b << std::endl;
@@ -366,7 +369,7 @@ int main(int argc, const char* argv[])
             // //factorize for results: warning: may overwrite exsiting combined dicts!
             // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
             //  //factorize for results
-            create_indexes_cascade(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);  //factorise for compression results
+            create_indexes_cascade(col,c_size,real_w,out,history_mers,args, true, combined_dict_size_compressed);  //factorise for compression results
             dicts.clear();
         }
     }

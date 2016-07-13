@@ -36,11 +36,11 @@ public:
     {
         return std::to_string(t_estimator_block_size);
     }
-    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type)
+    static std::string dict_file_name(collection& col, uint64_t size_in_bytes, int c_type, int isCombined = 0)
     {
         auto size_in_mb = size_in_bytes / (1024 * 1024);
 		std::string ctype = "-rw" + std::to_string(c_type);
-		return col.path + "/index/"  + col.text + "-" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl"+ctype;
+		return col.path + "/index/"  + col.text + "-" + type() + "-" + std::to_string(size_in_mb) + "-" + std::to_string(t_norm::num) + "-" + std::to_string(t_norm::den) + + "-" + std::to_string(adjusted_down_size(col, size_in_bytes))+".sdsl"+ctype+"-"+std::to_string(isCombined);
     }
     static std::string container_file_name(collection& col, uint64_t size_in_bytes)
     {
@@ -48,13 +48,13 @@ public:
         return col.path + "/index/"  + col.text + "-" + container_type() + ".sdsl";
     }
 public:
-	static void create(collection& col, bool rebuild,size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers) {
+	static void create(collection& col, bool rebuild,size_t size_in_bytes, int c_type, std::unordered_set<uint64_t> &history_mers, int isCombined = 0) {
 		uint32_t budget_bytes = size_in_bytes;
 		uint32_t budget_mb = size_in_bytes / (1024 * 1024);
 		// uint32_t num_blocks_required = budget_bytes / t_block_size;
 
         // check if we store it already and load it
-        auto fname = dict_file_name(col, size_in_bytes, c_type);
+        auto fname = dict_file_name(col, size_in_bytes, c_type, isCombined);
         col.file_map[KEY_DICT] = fname;
 		auto down_size = adjusted_down_size(col, size_in_bytes);
 		if (! utils::file_exists(fname) || rebuild ) {  // construct
