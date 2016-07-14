@@ -302,37 +302,36 @@ int main(int argc, const char* argv[])
                 auto hist_start = std::max(0,i-j);
                 std::unordered_set<uint64_t> history_mers;
                 history_mers.max_load_factor(0.1); //make faster by losing memory
-
-                //preload history mers if there is any
-                for (int h = hist_start; h <= i - 1; h++) {
-                    //history dicts should already exist and mers should be preloaded
-                    auto start = std::max(0,h-j);
-                    auto real_w = h-start;
-
-                    //get history dict name
-                    collection col(args.collection_dir, std::to_string(h));
-                    std::string c_type = "-rw"+ std::to_string(real_w);
-
-                    std::string hist_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w, 0);
-                    if(utils::file_exists(hist_file))
-                        addHistMers(history_mers, hist_file);
-                    else {
-                        LOG(INFO) << "\t" << "History File: " << hist_file << "do not exist! Program exit!";
-                        return -1; //exit(-1);?
-                    }
-                }
-                
                 //build own dict
-                collection col(args.collection_dir, std::to_string(i));
-                auto real_w = i-hist_start;
-                // std::string c_type = "-rw"+ std::to_string(real_w);
+                collection bcol(args.collection_dir, std::to_string(i));
+                auto b_real_w = i-hist_start;
+                std::string bale_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(bcol, dict_size, b_real_w, 0);
+                if(!utils::file_exists(bale_file)) {
+                    //preload history mers if there is any
+                    for (int h = hist_start; h <= i - 1; h++) {
+                        //history dicts should already exist and mers should be preloaded
+                        auto start = std::max(0,h-j);
+                        auto real_w = h-start;
+
+                        //get history dict name
+                        collection col(args.collection_dir, std::to_string(h));
+                        std::string c_type = "-rw"+ std::to_string(real_w);
+
+                        std::string hist_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w, 0);
+                        if(utils::file_exists(hist_file))
+                            addHistMers(history_mers, hist_file);
+                        else {
+                            LOG(INFO) << "\t" << "History File: " << hist_file << "do not exist! Program exit!";
+                            return -1; //exit(-1);?
+                        }
+                    }    
+                }
                 //don't wanna factorise now!
                 // if(history_mers.empty())
                 //     combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
                 // else
-                combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
-                
-                dicts.push_back(col.file_map[KEY_DICT]);
+                combined_dict_size_compressed = create_indexes_cascade(bcol,dict_size,b_real_w,out,history_mers,args,false);
+                dicts.push_back(bcol.file_map[KEY_DICT]);
             }
 
             //combine setup     
