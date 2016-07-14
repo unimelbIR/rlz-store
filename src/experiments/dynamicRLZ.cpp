@@ -336,41 +336,41 @@ int main(int argc, const char* argv[])
             }
 
             //combine setup     
-            // auto start = std::max(0,b-j);
-            // auto real_w = b-start;
-            // auto c_size = dict_size * (real_w + 1);
-            // collection col(args.collection_dir, std::to_string(b));
-            // std::string c_type = "-rw"+ std::to_string(real_w);
-            // std::string out_file = "";
-            // if(dicts.size() == 1)
-            //     out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
-            // else
-            //     out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
+            auto start = std::max(0,b-j);
+            auto real_w = b-start;
+            auto c_size = dict_size * (real_w + 1);
+            collection col(args.collection_dir, std::to_string(b));
+            std::string c_type = "-rw"+ std::to_string(real_w);
+            std::string out_file = "";
+            if(dicts.size() == 1)
+                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
+            else
+                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
 
-            // out << "Finally......" << std::endl;
-            // out << "Combining cascaded dictionaries for Bale = " << b << std::endl;
-            // out << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << std::endl;
-            // out << "Context Size = " << j << std::endl;
-            // out << "Real test bale Context Size = " << real_w << std::endl;
+            out << "Finally......" << std::endl;
+            out << "Combining cascaded dictionaries for Bale = " << b << std::endl;
+            out << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << std::endl;
+            out << "Context Size = " << j << std::endl;
+            out << "Real test bale Context Size = " << real_w << std::endl;
 
-            // LOG(INFO) << "\t" << "Finally......";
-            // LOG(INFO) << "\t" << "Combining cascaded dictionaries for Bale = " << b;
-            // LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
-            // LOG(INFO) << "\t" << "Context Size = " << j;
-            // LOG(INFO) << "\t" << "Real Context Size = " << real_w;
+            LOG(INFO) << "\t" << "Finally......";
+            LOG(INFO) << "\t" << "Combining cascaded dictionaries for Bale = " << b;
+            LOG(INFO) << "\t" << "Dictionary Size in use = " << std::to_string(dict_size/(1024*1024)) << "MiB";
+            LOG(INFO) << "\t" << "Context Size = " << j;
+            LOG(INFO) << "\t" << "Real Context Size = " << real_w;
 
-            // if(! utils::file_exists(out_file) || rebuild )
-            //     combineDicts(dicts, out_file, start);
-            // else LOG(INFO) << "\t" << "Combined file exist!";
+            if(! utils::file_exists(out_file) || rebuild )
+                combineDicts(dicts, out_file, start);
+            else LOG(INFO) << "\t" << "Combined file exist!";
 
-            // std::unordered_set<uint64_t> history_mers;
-            // history_mers.max_load_factor(0.1); //make faster by losing memory
+            std::unordered_set<uint64_t> history_mers;
+            history_mers.max_load_factor(0.1); //make faster by losing memory
 
-            // // //factorize for results: warning: may overwrite exsiting combined dicts!
-            // // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
-            // //  //factorize for results
-            // create_indexes_cascade(col,c_size,real_w,out,history_mers,args, true, combined_dict_size_compressed);  //factorise for compression results
-            // dicts.clear();
+            // //factorize for results: warning: may overwrite exsiting combined dicts!
+            // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed); //factorise for compression results
+            //  //factorize for results
+            create_indexes_cascade(col,c_size,real_w,out,history_mers,args, true, combined_dict_size_compressed);  //factorise for compression results
+            dicts.clear();
         }
     }
 
