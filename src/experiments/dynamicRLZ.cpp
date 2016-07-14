@@ -332,7 +332,7 @@ int main(int argc, const char* argv[])
                 // else
                 combined_dict_size_compressed = create_indexes_cascade(col,dict_size,real_w,out,history_mers,args,false);
                 
-                // dicts.push_back(col.file_map[KEY_DICT]);
+                dicts.push_back(col.file_map[KEY_DICT]);
             }
 
             //combine setup     
