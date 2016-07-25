@@ -268,8 +268,8 @@ int main(int argc, const char* argv[])
             // auto c_size = dict_size * real_w; //only previous bales;
             collection col(args.collection_dir, std::to_string(b));
             std::string out_file = "";
-            // if(dicts.size() == 1)
-            if(dicts.size() == 0)
+            if(dicts.size() == 1)
+            // if(dicts.size() == 0)
                 out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
                 out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
@@ -351,8 +351,8 @@ int main(int argc, const char* argv[])
             collection col(args.collection_dir, std::to_string(b));
             std::string c_type = "-rw"+ std::to_string(real_w);
             std::string out_file = "";
-            // if(dicts.size() == 1)
-            if(dicts.size() == 0)
+            if(dicts.size() == 1)
+            // if(dicts.size() == 0)
                 out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
                 out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
