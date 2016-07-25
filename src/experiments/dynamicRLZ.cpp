@@ -253,7 +253,7 @@ int main(int argc, const char* argv[])
             }
         }
         //combine previous only
-        dicts.pop_back();
+        // dicts.pop_back();
 
         // LOG(INFO) << "\t" << "Dict File names = " << dicts;
         for (int j = w; j >= 0; j--)
