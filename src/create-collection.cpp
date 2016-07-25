@@ -53,6 +53,7 @@ parse_args(int argc, const char* argv[])
     args.collection_dir = "";
     args.input_dir = "";
     args.input_file = "";
+    args.output_file = "";
     args.format = data_format::invalid;
     args.max_num_files = 99999999;
     while ((op = getopt(argc, (char* const*)argv, "c:t:w:n:i:")) != -1) {
@@ -227,7 +228,7 @@ int main(int argc, const char* argv[])
     }
     {
         LOG(INFO) << "Writing document order file.";
-        std::string docorder_file = args.collection_dir + "/" + args.output_file + KEY_DOCORDER;
+        	
         std::ofstream dof(docorder_file);
         sdsl::read_only_mapper<8> output(output_file);
         auto beg = output.begin();
