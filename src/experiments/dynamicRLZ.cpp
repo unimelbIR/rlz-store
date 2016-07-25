@@ -256,16 +256,16 @@ int main(int argc, const char* argv[])
         dicts.pop_back();
 
         // LOG(INFO) << "\t" << "Dict File names = " << dicts;
-        // for (int j = w; j >= 0; j--)
-        for (int j = w; j >= 1; j--)
+        for (int j = w; j >= 0; j--)
+        // for (int j = w; j >= 1; j--)
         {
             out << "Entering Context = " << j << std::endl;
             LOG(INFO) << "\t" << "Entering Context = " << j;
             auto start = std::max(0,b-j);
             //combine setup     
             auto real_w = b-start;
-            // auto c_size = dict_size * (real_w + 1);
-            auto c_size = dict_size * real_w; //only previous bales;
+            auto c_size = dict_size * (real_w + 1);
+            // auto c_size = dict_size * real_w; //only previous bales;
             collection col(args.collection_dir, std::to_string(b));
             std::string out_file = "";
             // if(dicts.size() == 1)
@@ -298,8 +298,8 @@ int main(int argc, const char* argv[])
 
     //more complicated cascade mode
     if(mode == "cascade") {    //default entry of w is n-1
-        for (int j = w; j >= 1; j--) //should be back to 1
-        //for (int j = w; j >= 0; j = j - 4) //should be back to 1
+        // for (int j = w; j >= 1; j--) //should be back to 1
+        for (int j = w; j >= 0; j = j--) //should be back to 1
         {
             out << "Entering Context = " << j << std::endl;
             LOG(INFO) << "\t" << "Entering Context = " << j;
@@ -341,13 +341,13 @@ int main(int argc, const char* argv[])
                 dicts.push_back(bcol.file_map[KEY_DICT]);
             }
             //combine previous only
-            dicts.pop_back();
+            // dicts.pop_back();
 
             //combine setup     
             auto start = std::max(0,b-j);
             auto real_w = b-start;
-            // auto c_size = dict_size * (real_w + 1);
-            auto c_size = dict_size * real_w; //only previous bales;
+            auto c_size = dict_size * (real_w + 1);
+            // auto c_size = dict_size * real_w; //only previous bales;
             collection col(args.collection_dir, std::to_string(b));
             std::string c_type = "-rw"+ std::to_string(real_w);
             std::string out_file = "";
