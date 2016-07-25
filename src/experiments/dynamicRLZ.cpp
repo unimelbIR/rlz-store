@@ -61,7 +61,7 @@ void combineDicts(const std::vector<std::string>& file_dicts, std::string& file_
     //read into data structure
     for(size_t i=start;i<file_dicts.size();i++) {
         sdsl::read_only_mapper<8> dict(file_dicts[i]); 
-	LOG(INFO) << "\t" << "no of files to combine = " << file_dicts.size();
+	    LOG(INFO) << "\t" << "Combining dict = " << file_dicts[i];
         for(size_t j=0;j<dict.size()-1;j++) {
             out.push_back(dict[j]);
         }
