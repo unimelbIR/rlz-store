@@ -264,7 +264,8 @@ int main(int argc, const char* argv[])
             auto start = std::max(0,b-j);
             //combine setup     
             auto real_w = b-start;
-            auto c_size = dict_size * (real_w + 1);
+            // auto c_size = dict_size * (real_w + 1);
+            auto c_size = dict_size * real_w; //only previous bales;
             collection col(args.collection_dir, std::to_string(b));
             std::string out_file = "";
             // if(dicts.size() == 1)
@@ -345,7 +346,8 @@ int main(int argc, const char* argv[])
             //combine setup     
             auto start = std::max(0,b-j);
             auto real_w = b-start;
-            auto c_size = dict_size * (real_w + 1);
+            // auto c_size = dict_size * (real_w + 1);
+            auto c_size = dict_size * real_w; //only previous bales;
             collection col(args.collection_dir, std::to_string(b));
             std::string c_type = "-rw"+ std::to_string(real_w);
             std::string out_file = "";
