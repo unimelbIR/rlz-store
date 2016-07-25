@@ -32,7 +32,7 @@ void addHistMers(std::unordered_set<uint64_t> &history_mers, std::string inFile)
         auto hash = rk.update(sym);
         if(j < 16-1) continue; 
         else {
-            history_mers.emplace(hash);
+            history_mers.emplace(hash); 
         }
     }
     LOG(INFO) << "\t" << "history_mers size: " << history_mers.size();
@@ -64,7 +64,7 @@ void combineDicts(const std::vector<std::string>& file_dicts, std::string& file_
 	    LOG(INFO) << "\t" << "Combining dict = " << file_dicts[i];
         for(size_t j=0;j<dict.size()-1;j++) {
             out.push_back(dict[j]);
-        }
+        }   
     }
     out.push_back('\0');
     auto stop = hrclock::now();    
@@ -247,7 +247,7 @@ int main(int argc, const char* argv[])
             // if(b == 0) 
             // create_indexes_combine(col,c_size,real_w,out,history_mers,args,true, true, combined_dict_size_compressed);
             collection col(args.collection_dir, std::to_string(i)); 
-            dicts.push_back(dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, 0, 0));
+            dicts.push_back(dict_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, 0, 0));
             if(i == b) { //testing bale compress dict
                 combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false); //created already
             }
@@ -270,9 +270,9 @@ int main(int argc, const char* argv[])
             std::string out_file = "";
             // if(dicts.size() == 1)
             if(dicts.size() == 0)
-                out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
+                out_file += dict_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
-                out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
+                out_file += dict_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
 
             out << "Finally......" << std::endl;
             out << "Combining simple dictionaries for Bale = " << b << std::endl;
@@ -312,7 +312,7 @@ int main(int argc, const char* argv[])
                 //build own dict
                 collection bcol(args.collection_dir, std::to_string(i));
                 auto b_real_w = i-hist_start;
-                std::string bale_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(bcol, dict_size, b_real_w, 0);
+                std::string bale_file = dict_multibale_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(bcol, dict_size, b_real_w, 0);
                 if(!utils::file_exists(bale_file)) {
                     //preload history mers if there is any
                     for (int h = hist_start; h <= i - 1; h++) {
@@ -324,7 +324,7 @@ int main(int argc, const char* argv[])
                         collection col(args.collection_dir, std::to_string(h));
                         std::string c_type = "-rw"+ std::to_string(real_w);
 
-                        std::string hist_file = dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w, 0);
+                        std::string hist_file = dict_multibale_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, dict_size, real_w, 0);
                         if(utils::file_exists(hist_file))
                             addHistMers(history_mers, hist_file);
                         else {
@@ -353,9 +353,9 @@ int main(int argc, const char* argv[])
             std::string out_file = "";
             // if(dicts.size() == 1)
             if(dicts.size() == 0)
-                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
+                out_file += dict_multibale_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
-                out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
+                out_file += dict_multibale_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
 
             out << "Finally......" << std::endl;
             out << "Combining cascaded dictionaries for Bale = " << b << std::endl;

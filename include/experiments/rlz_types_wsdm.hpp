@@ -10,7 +10,7 @@ const uint32_t www_uniform_sample_block_size = 1024;
 const uint32_t factorization_blocksize = 64*1024;
 
 
-using rlz_store_static_single = rlz_store_static<dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>,
+using rlz_store_static_single = rlz_store_static<dict_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>,
                                 dict_prune_none,
                                 dict_index_csa<www_csa_type>, //to update to sa
                                 factorization_blocksize,
@@ -19,7 +19,7 @@ using rlz_store_static_single = rlz_store_static<dict_local_coverage_norms<1024,
                                 factor_coder_blocked<3, coder::zlib<9>, coder::zlib<9>, coder::zlib<9>>,
                                 block_map_uncompressed>;
 
-using rlz_store_static_multi =  rlz_store_static<dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>,
+using rlz_store_static_multi =  rlz_store_static<dict_multibale_local_coverage_norms<1024*1024,16,512,std::ratio<1,2>>,
                                 dict_prune_none,
                                 dict_index_csa<www_csa_type>, //to update to sa
                                 factorization_blocksize,
