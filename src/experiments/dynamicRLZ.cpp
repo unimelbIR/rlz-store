@@ -252,8 +252,12 @@ int main(int argc, const char* argv[])
                 combined_dict_size_compressed = create_indexes_combine(col,dict_size,0,out,history_mers,args,false); //created already
             }
         }
+        //combine previous only
+        dicts.pop_back();
+
         // LOG(INFO) << "\t" << "Dict File names = " << dicts;
-        for (int j = w; j >= 0; j--)
+        // for (int j = w; j >= 0; j--)
+        for (int j = w; j >= 1; j--)
         {
             out << "Entering Context = " << j << std::endl;
             LOG(INFO) << "\t" << "Entering Context = " << j;
@@ -263,7 +267,8 @@ int main(int argc, const char* argv[])
             auto c_size = dict_size * (real_w + 1);
             collection col(args.collection_dir, std::to_string(b));
             std::string out_file = "";
-            if(dicts.size() == 1)
+            // if(dicts.size() == 1)
+            if(dicts.size() == 0)
                 out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
                 out_file += dict_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
@@ -334,6 +339,8 @@ int main(int argc, const char* argv[])
                 combined_dict_size_compressed = create_indexes_cascade(bcol,dict_size,b_real_w,out,history_mers,args,false);
                 dicts.push_back(bcol.file_map[KEY_DICT]);
             }
+            //combine previous only
+            dicts.pop_back();
 
             //combine setup     
             auto start = std::max(0,b-j);
@@ -342,7 +349,8 @@ int main(int argc, const char* argv[])
             collection col(args.collection_dir, std::to_string(b));
             std::string c_type = "-rw"+ std::to_string(real_w);
             std::string out_file = "";
-            if(dicts.size() == 1)
+            // if(dicts.size() == 1)
+            if(dicts.size() == 0)
                 out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 0);
             else
                 out_file += dict_multibale_local_coverage_norms<1024,16,512,std::ratio<1,2>>::dict_file_name(col, c_size, real_w, 1);
