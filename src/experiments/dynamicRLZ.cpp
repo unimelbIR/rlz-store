@@ -292,7 +292,7 @@ int main(int argc, const char* argv[])
 
     //more complicated cascade mode
     if(mode == "cascade") {    //default entry of w is n-1
-        for (int j = w; j >= 1; j--) //should be back to 1
+        for (int j = w; j >= 0; j--) //should be back to 1
         {
             out << "Entering Context = " << j << std::endl;
             LOG(INFO) << "\t" << "Entering Context = " << j;
