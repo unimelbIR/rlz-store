@@ -97,10 +97,10 @@ void compress_rlz_block_inmem(
     /* parse data */
     for (const auto& factor : cur_block_factors) {
         if (factor.is_literal) {
-            bfd.add_factor(coder, factor.literal_ptr, 0, factor.len, 0, 0, 0, 0);
+            bfd.add_factor(coder, factor.literal_ptr, 0, factor.len, 0, 0);
         }
         else {
-            bfd.add_factor(coder, factor.literal_ptr, factor.offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
+            bfd.add_factor(coder, factor.literal_ptr, factor.offset, factor.len, factor.sp, factor.ep);
         }
     }
     
@@ -109,7 +109,7 @@ void compress_rlz_block_inmem(
 }
 
 template<class t_coder_pv,class t_coder_zzz,class t_stream,class t_idx>
-void compress_rlzp2a_block_inmem(
+void compress_rlzp1_block_inmem(
     t_coder_pv& coder_pv,
     t_coder_zzz& coder_zzz,
     size_t block_id,
@@ -129,8 +129,8 @@ void compress_rlzp2a_block_inmem(
     /* parse data */
     for (const auto& factor : cur_block_factors) {
         if (factor.is_literal) {
-            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0, 0, 0);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0, 0, 0);
+            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0);
         }
         else {
             size_t m = factor.ep - factor.sp + 1;
@@ -157,18 +157,18 @@ void compress_rlzp2a_block_inmem(
                 new_segment_id = min_segment_id;
             }
             auto new_offset = (new_segment_id << segment_size_log2) + in_page_offset;
-            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
+            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
         }
     }
     
     /* encode data  */
-    coder_pv.encode_block_output(os,bfd,block_id,"RLZP2A-PV");
-    coder_zzz.encode_block_output(os,bfd_zzz,block_id,"RLZP2A-ZZZ");
+    coder_pv.encode_block_output(os,bfd,block_id,"RLZP1-PV");
+    coder_zzz.encode_block_output(os,bfd_zzz,block_id,"RLZP1-ZZZ");
 }
 
 template<class t_coder_pv,class t_coder_zzz,class t_stream,class t_idx>
-void compress_rlzp2b_block_inmem(
+void compress_rlzp2_block_inmem(
     t_coder_pv& coder_pv,
     t_coder_zzz& coder_zzz,
     size_t block_id,
@@ -191,8 +191,8 @@ void compress_rlzp2b_block_inmem(
     /* parse data */
     for (const auto& factor : cur_block_factors) {
         if (factor.is_literal) {
-            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0, 0, 0);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0, 0, 0);
+            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0);
         }
         else {
             size_t m = factor.ep - factor.sp + 1;
@@ -228,19 +228,19 @@ void compress_rlzp2b_block_inmem(
                 preferred_pages[new_page] = 1;
             }
             auto new_offset = (new_segment_id << segment_size_log2) + in_page_offset;
-            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
+            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
         }
     }
     
     /* encode data  */
-    coder_pv.encode_block_output(os,bfd,block_id,"RLZP2B-PV");
-    coder_zzz.encode_block_output(os,bfd_zzz,block_id,"RLZP2B-ZZZ");
+    coder_pv.encode_block_output(os,bfd,block_id,"RLZP2-PV");
+    coder_zzz.encode_block_output(os,bfd_zzz,block_id,"RLZP2-ZZZ");
 }
 
 
 template<class t_coder_pv,class t_coder_zzz,class t_stream,class t_idx>
-void compress_rlzp2c_block_inmem(
+void compress_rlzp3_block_inmem(
     t_coder_pv& coder_pv,
     t_coder_zzz& coder_zzz,
     size_t block_id,
@@ -274,8 +274,8 @@ void compress_rlzp2c_block_inmem(
     /* parse data */
     for (const auto& factor : cur_block_factors) {
         if (factor.is_literal) {
-            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0, 0,0);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0, 0,0);
+            bfd.add_factor(coder_pv, factor.literal_ptr, 0, factor.len, 0, 0);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, 0, factor.len, 0, 0);
         }
         else {
             size_t m = factor.ep - factor.sp + 1;
@@ -311,99 +311,10 @@ void compress_rlzp2c_block_inmem(
                 preferred_pages[new_page] = 1;
             }
             auto new_offset = (new_segment_id << segment_size_log2) + in_page_offset;
-            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
-            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep, factor.sp1, factor.ep1);
+            bfd.add_factor(coder_pv, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
+            bfd_zzz.add_factor(coder_zzz, factor.literal_ptr, new_offset, factor.len, factor.sp, factor.ep);
         }
     }
-    
-    /* encode data  */
-    coder_pv.encode_block_output(os,bfd,block_id,"RLZP2C-PV");
-    coder_zzz.encode_block_output(os,bfd_zzz,block_id,"RLZP2C-ZZZ");
-}
-
-template<class t_itr,class t_coder_pv,class t_coder_zzz,class t_stream,class t_idx>
-void factor_block_rlzp3(
-    size_t block_id,
-    t_itr itr,
-    size_t block_size,
-    t_coder_pv& coder_pv,
-    t_coder_zzz& coder_zzz,
-    t_stream& os,
-    uint64_t page_size_log2,
-    std::vector<uint8_t>& preferred_pages,
-    t_idx& idx,
-    block_factor_data& bfd,
-    block_factor_data& bfd_zzz)
-{
-    /* reset data */
-    os.seek(0);
-    bfd.reset();
-    bfd_zzz.reset();
-    for (size_t k = 0; k < preferred_pages.size(); k++) preferred_pages[k] = 0;
-    
-    /* factorize */
-    auto end = itr + block_size;
-    auto factor_itr = idx.template factorize<decltype(itr),false>(itr, end);
-    size_t syms_encoded = 0;
-    while (!factor_itr.finished()) {
-        if (factor_itr.len == 0) {
-            bfd.add_factor(coder_pv, itr + syms_encoded, 0, 1, 0, 0, 0,0);
-            bfd_zzz.add_factor(coder_zzz, itr + syms_encoded, 0, 1, 0, 0, 0,0);
-            syms_encoded++;
-        } else {
-            size_t m = factor_itr.ep - factor_itr.sp + 1;
-            /* find preferred in <sp,ep> */
-            bool preferred_found = false;
-            uint32_t preferred_offset = 0;
-            uint32_t smallest_offset = std::numeric_limits<uint32_t>::max();
-            for (size_t i = 0; i < m; i++) {
-                auto cur_offset = idx.translate_offset(factor_itr.sp + i, factor_itr.len);
-                auto cur_page = cur_offset >> page_size_log2;
-                if (preferred_pages[cur_page] == 1) {
-                    preferred_found = true;
-                    preferred_offset = cur_offset;
-                    break;
-                }
-                if(smallest_offset > cur_offset) {
-                    smallest_offset = cur_offset;
-                }
-            }
-            /* search <sp1,ep1> if no preferred found */
-            bool preferred_found_minus_one = false;
-            if(!preferred_found && factor_itr.len > coder_pv.literal_threshold + 1) {
-                 size_t m1 = factor_itr.ep1 - factor_itr.sp1 + 1;
-                 if(m1 != m) {
-                    for (size_t i = 0; i < m1; i++) {
-                        auto cur_offset = idx.translate_offset(factor_itr.sp1 + i, factor_itr.len-1);
-                        auto cur_page = cur_offset >> page_size_log2;
-                        if (preferred_pages[cur_page] == 1) {
-                            preferred_found_minus_one = true;
-                            preferred_offset = cur_offset;
-                            factor_itr.rewind(); // have to go back one symbol in the factorization
-                            break;
-                        }
-                    }
-                 }
-            }
-            
-            if(!preferred_found && !preferred_found_minus_one) {
-                auto new_page = smallest_offset >> page_size_log2;
-                preferred_pages[new_page] = 1;
-                preferred_offset = smallest_offset;
-            }
-            
-            auto offset = preferred_offset;
-            size_t flen = factor_itr.len;
-            if(preferred_found_minus_one) {
-                flen--;
-            }
-            bfd.add_factor(coder_pv, itr + syms_encoded, offset, flen, 0, 0, 0,0);
-            bfd_zzz.add_factor(coder_zzz, itr + syms_encoded, offset, flen, 0, 0, 0,0);
-            syms_encoded += flen;
-        }
-        ++factor_itr;
-    }
-        
     
     /* encode data  */
     coder_pv.encode_block_output(os,bfd,block_id,"RLZP3-PV");
@@ -462,14 +373,9 @@ int main(int argc, const char* argv[])
     using baseline_factor_coder_packed = factor_coder_blocked<literal_threshold, coder::fixed<8>, coder::fixed<dict_pointer_width>, coder::vbyte>;
     using baseline_factor_coder_zlib = factor_coder_blocked<literal_threshold, coder::zlib<9>, coder::zlib<9>, coder::zlib<9> >;
 
-    // using baseline_type_packed = rlz_store_static<dict_creation_strategy,
-    //                                               dict_pruning_strategy,
-    //                                               dict_index_type,
-    //                                               factorization_blocksize,
-    //                                               default_search_local_context,
-    //                                               factor_selection_strategy,
-    //                                               baseline_factor_coder_packed,
-    //                                               block_map_type>; 
+    using baseline_factor_coder_packed_ps = factor_coder_blocked_ps<literal_threshold, coder::fixed<8>, coder::fixed<dict_pointer_width>, coder::vbyte,dict_page_size>;
+    using baseline_factor_coder_zlib_ps = factor_coder_blocked_ps<literal_threshold, coder::zlib<9>, coder::zlib<9>, coder::zlib<9> ,dict_page_size>;
+
 
     using baseline_type_zlib = rlz_store_static<dict_creation_strategy,
                                                   dict_pruning_strategy,
@@ -480,14 +386,6 @@ int main(int argc, const char* argv[])
                                                   baseline_factor_coder_zlib,
                                                   block_map_type>; 
 
-    using www_type_zlib = rlz_store_static<dict_local_coverage_norms<dict_segment_size_bytes>,
-                                                  dict_pruning_strategy,
-                                                  dict_index_type,
-                                                  factorization_blocksize,
-                                                  default_search_local_context,
-                                                  factor_selection_strategy,
-                                                  baseline_factor_coder_zlib,
-                                                  block_map_type>; 
 
     using p0pv_coder_t = factor_coder_blocked_subdict_pv<literal_threshold,
                                                   dict_page_size,
@@ -516,18 +414,13 @@ int main(int argc, const char* argv[])
     using factor_coder_zlib_transposed = factor_coder_blocked<literal_threshold, coder::zlib<9>, coder::zlibt<9>, coder::zlib<9> >;
 
     {
-        // auto rlz_store = baseline_type_zlib::builder{}
-        //                      .set_rebuild(args.rebuild)
-        //                      .set_threads(args.threads)
-        //                      .set_dict_size(dict_size_bytes)
-        //                      .build_or_load(col);
-     
-        auto rlz_store = www_type_zlib::builder{}
+        auto rlz_store = baseline_type_zlib::builder{}
                              .set_rebuild(args.rebuild)
                              .set_threads(args.threads)
                              .set_dict_size(dict_size_bytes)
                              .build_or_load(col);
-     
+        return 0;
+
         LOG(INFO) << "Load dict index";
         dict_index_type dict_idx(col, false);
      
@@ -555,84 +448,44 @@ int main(int argc, const char* argv[])
         bit_ostream<sdsl::bit_vector> fs(tmp_buffer);
         p0pv_coder_t p0pv_coder; p0zzz_coder_t p0zzz_coder;
         p1pv_coder_t p1pv_coder; p1zzz_coder_t p1zzz_coder;
-        baseline_factor_coder_packed pv_coder; baseline_factor_coder_zlib zzz_coder;
+        baseline_factor_coder_packed_ps pv_coder; baseline_factor_coder_zlib_ps zzz_coder;
         factor_coder_zlib_transposed zzzt_coder;
         std::vector<uint8_t> preferred_pages(num_pages_in_dict+1);
 
-        // auto fitr = rlz_store.factors_begin();
-        // auto fend = rlz_store.factors_end();
-        // while(fitr != fend) {
-        //     const auto& f = *fitr;
-        //     factor_data.push_back(f);
-        //     if (fitr.last_factor_in_block()) {
-        //         // compress_rlz_block_inmem("RLZ-PV",pv_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZ-ZZZ",zzz_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZ-ZZZT",zzzt_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZP0-PV",p0pv_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZP0-ZZZ",p0zzz_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZP1-PV",p1pv_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlz_block_inmem("RLZP1-ZZZ",p1zzz_coder,fitr.block_id,fs,factor_data,bfd);
-        //         // compress_rlzp2a_block_inmem(p1pv_coder,p1zzz_coder,
-        //         //     fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
-        //         // //     dict_idx,bfd,bfd_zzz);
-        //         // compress_rlzp2b_block_inmem(p1pv_coder,p1zzz_coder,
-        //         //     fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
-        //         //     page_size_log2,preferred_pages,dict_idx,bfd,bfd_zzz);
-        //         // compress_rlzp2c_block_inmem(p1pv_coder,p1zzz_coder,
-        //         //     fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
-        //         //     page_size_log2,preferred_pages,dict_idx,bfd,bfd_zzz);
-        //         // compress_rlzp3_block_inmem(p1pv_coder,p1zzz_coder,
-        //         //     fitr.block_id,fs,factor_data,segment_table,segment_size_log2,page_size_log2,preferred_pages,dict_idx,bfd);
-        //         factor_data.clear();
-        //     }
-        //     ++fitr;
-        // }
-        
-        // /* P3 */
-        LOG(INFO) << "P3 Write dict";
-        auto new_dict_file_name = dict_segment_score<dict_segment_size_bytes,dict_page_size>::file_name(col, dict_size_bytes);
-        if (!utils::file_exists(new_dict_file_name)) {
-            /* (1) get the old dict */
-            const auto& existing_dict = rlz_store.dict;
-            auto existing_dict_hash = rlz_store.m_dict_hash;
-            col.file_map[KEY_DICT] = new_dict_file_name;
-            auto new_dict = sdsl::write_out_buffer<8>::create(col.file_map[KEY_DICT]);
-            /* (4) write the reordered dictionary */
-            for (size_t i = 0; i < segment_table.size(); i++) {
-                auto old_segment_id = segment_table[i];
-                auto old_segment_itr = existing_dict.begin() + (old_segment_id * dict_segment_size_bytes);
-                for (size_t j = 0; j < dict_segment_size_bytes; j++) {
-                    new_dict.push_back(*old_segment_itr++);
+        auto fitr = rlz_store.factors_begin();
+        auto fend = rlz_store.factors_end();
+        while(fitr != fend) {
+            const auto& f = *fitr;
+            factor_data.push_back(f);
+            if (fitr.last_factor_in_block()) {
+                switch(args.dict_size_in_bytes) {
+                    case 1*1024:
+                        compress_rlz_block_inmem("RLZ-PV",pv_coder,fitr.block_id,fs,factor_data,bfd);
+                        break;
+                    case 2*1024:
+                        compress_rlz_block_inmem("RLZ-ZZZ",zzz_coder,fitr.block_id,fs,factor_data,bfd);
+                        break;
+                    case 3*1024:
+                        compress_rlzp1_block_inmem(p1pv_coder,p1zzz_coder,
+                            fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
+                            dict_idx,bfd,bfd_zzz);
+                        break;
+                    case 4*1024:
+                        compress_rlzp2_block_inmem(p1pv_coder,p1zzz_coder,
+                            fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
+                            page_size_log2,preferred_pages,dict_idx,bfd,bfd_zzz);
+                        break;
+                    case 5*1024:
+                        compress_rlzp3_block_inmem(p1pv_coder,p1zzz_coder,
+                            fitr.block_id,fs,factor_data,segment_table,segment_size_log2,
+                            page_size_log2,preferred_pages,dict_idx,bfd,bfd_zzz);
+                        break;
                 }
+                factor_data.clear();
             }
-            new_dict.push_back(0); // EOD symbol
+            ++fitr;
         }
-        else {
-            col.file_map[KEY_DICT] = new_dict_file_name;
-        }
-        col.compute_dict_hash();
-        LOG(INFO) << "Create dict index over segment score sorted dict";
-        dict_index_type ss_dict_idx(col, false);
-         
-        {
-            
-            const sdsl::int_vector_mapped_buffer<8> text(col.file_map[KEY_TEXT]);
-            size_t n = text.size();
-            size_t num_blocks = n / factorization_blocksize;
-            auto itr = text.begin();
-            for(size_t i=0;i<num_blocks;i++) {
-                factor_block_rlzp3(i,itr,factorization_blocksize,p1pv_coder,p1zzz_coder,
-                    fs,page_size_log2,preferred_pages,ss_dict_idx,bfd,bfd_zzz);
-                itr += factorization_blocksize;
-            }
-            itr = itr + num_blocks*factorization_blocksize;
-            auto left = n % factorization_blocksize;
-            if(left) {
-                factor_block_rlzp3(num_blocks,itr,left,p1pv_coder,p1zzz_coder,
-                    fs,page_size_log2,preferred_pages,ss_dict_idx,bfd,bfd_zzz);
-            }
-        }
-     
+        
     }
     
     return EXIT_SUCCESS;

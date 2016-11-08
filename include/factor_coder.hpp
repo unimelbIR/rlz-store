@@ -43,12 +43,10 @@ struct factor_coder_blocked {
             literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
         if (bfd.num_offsets) {
             offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     spep_store.push_back(bfd.sp[i]);
-            //     spep_store.push_back(bfd.ep[i]);
-            //     spep_store.push_back(bfd.sp1[i]);
-            //     spep_store.push_back(bfd.ep1[i]);
-            // }   
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                spep_store.push_back(bfd.sp[i]);
+                spep_store.push_back(bfd.ep[i]);
+            }   
         }
     }
 
@@ -116,10 +114,134 @@ struct factor_coder_blocked {
             offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             csi.offset_bytes = (ifs.tellg() - off_pos)/8;
             
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     bfd.sp[i] = spep_store[spep_start+2*i];
-            //     bfd.ep[i] = spep_store[spep_start+(2*i+1)];
-            // }   
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                bfd.sp[i] = spep_store[spep_start+2*i];
+                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+            }
+        }
+        return csi;
+    }
+};
+
+
+/*
+	encode factors in blocks.
+ */
+template <uint32_t t_literal_threshold = 1,
+          class t_coder_literal = coder::fixed<32>,
+          class t_coder_offset = coder::aligned_fixed<uint32_t>,
+          class t_coder_len = coder::vbyte,
+          uint32_t t_page_size = 16 * 1024>
+struct factor_coder_blocked_ps {
+    typedef typename sdsl::int_vector<>::size_type size_type;
+    enum { literal_threshold = t_literal_threshold };
+    t_coder_literal literal_coder;
+    t_coder_offset offset_coder;
+    t_coder_len len_coder;
+    mutable std::vector<uint64_t> page_offsets;
+    const uint8_t page_size_log2 = utils::CLog2<t_page_size>();
+    static std::string type()
+    {
+        return "factor_coder_blocked_ps-t=" + std::to_string(t_literal_threshold)
+               + "-" + t_coder_literal::type() + "-" + t_coder_offset::type() + "-" + t_coder_len::type();
+    }
+
+    template <class t_ostream,class t_vec>
+    void encode_block(t_ostream& ofs,t_vec& spep_store,block_factor_data& bfd) const
+    {
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + bfd.num_factors, [](uint32_t& n) { n--; });
+        len_coder.encode(ofs, bfd.lengths.data(), bfd.num_factors);
+        if (bfd.num_literals)
+            literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
+        if (bfd.num_offsets) {
+            offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                spep_store.push_back(bfd.sp[i]);
+                spep_store.push_back(bfd.ep[i]);
+            }   
+        }
+    }
+
+    template <class t_ostream>
+    void encode_block_output(t_ostream& ofs,block_factor_data& bfd,size_t block_id,const char* name) const
+    {
+        size_t total_before = ofs.tellp();       
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + bfd.num_factors, [](uint32_t& n) { n--; });
+        size_t before = ofs.tellp();
+        len_coder.encode(ofs, bfd.lengths.data(), bfd.num_factors);
+        size_t len_size_bytes = (ofs.tellp() - before)/8;
+        
+        before = ofs.tellp();
+        if (bfd.num_literals)
+            literal_coder.encode(ofs, bfd.literals.data(), bfd.num_literals);
+        
+        size_t literal_size_bytes = (ofs.tellp() - before)/8;
+            
+        size_t offsets_before = ofs.tellp();
+        size_t num_pages_in_block = 0;
+        if (bfd.num_offsets) {
+            offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
+            
+            // (1) determine page offsets
+            if(bfd.num_offsets > page_offsets.size()) page_offsets.resize(bfd.num_offsets);
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                page_offsets[i] = bfd.offsets[i] >> page_size_log2;
+            }
+            // (2) determine unique offsets
+            std::sort(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            auto end = std::unique(page_offsets.begin(),page_offsets.begin()+bfd.num_offsets);
+            num_pages_in_block = std::distance(page_offsets.begin(),end);
+            
+        }
+        size_t offset_size_bytes = (ofs.tellp() - offsets_before)/8;
+        size_t total_size_bytes = (ofs.tellp() - total_before)/8;
+        
+        LOG(INFO) << name << ";"
+                  << block_id << ";"
+                  << len_size_bytes << ";"
+                  << literal_size_bytes << ";"
+                  << offset_size_bytes << ";"
+                  << 0 << ";"
+                  << bfd.num_offsets << ";"
+                  << num_pages_in_block << ";"
+                  << 0 << ";"
+                  << total_size_bytes;
+    }
+
+    template <class t_istream,class t_vec>
+    coder_size_info decode_block(t_istream& ifs,t_vec& spep_store,size_t spep_start,block_factor_data& bfd, size_t num_factors) const
+    {
+        coder_size_info csi;
+        bfd.num_factors = num_factors;
+
+        auto len_pos = ifs.tellg();
+        len_coder.decode(ifs, bfd.lengths.data(), num_factors);
+        csi.length_bytes = (ifs.tellg() - len_pos)/8;
+
+        std::for_each(bfd.lengths.begin(), bfd.lengths.begin() + num_factors, [](uint32_t& n) { n++; });
+        bfd.num_literals = 0;
+        auto num_literal_factors = 0;
+        for (size_t i = 0; i < bfd.num_factors; i++) {
+            if (bfd.lengths[i] <= literal_threshold) {
+                bfd.num_literals += bfd.lengths[i];
+                num_literal_factors++;
+            }
+        }
+        if (bfd.num_literals) {
+            auto lit_pos = ifs.tellg();
+            literal_coder.decode(ifs, bfd.literals.data(), bfd.num_literals);
+            csi.literal_bytes = (ifs.tellg() - lit_pos)/8;
+        }
+        bfd.num_offsets = bfd.num_factors - num_literal_factors;
+        if (bfd.num_offsets) {
+            auto off_pos = ifs.tellg();
+            offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
+            csi.offset_bytes = (ifs.tellg() - off_pos)/8;
+            
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                bfd.sp[i] = spep_store[spep_start+2*i];
+                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+            }
         }
         return csi;
     }
@@ -226,12 +348,10 @@ struct factor_coder_blocked_subdict_zzz {
                 ofs.skip(uncompressed_size);
             }
             
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     spep_store.push_back(bfd.sp[i]);
-            //     spep_store.push_back(bfd.ep[i]);
-            //     spep_store.push_back(bfd.sp1[i]);
-            //     spep_store.push_back(bfd.ep1[i]);
-            // }   
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                spep_store.push_back(bfd.sp[i]);
+                spep_store.push_back(bfd.ep[i]);
+            }   
         }
     }
 
@@ -391,12 +511,10 @@ struct factor_coder_blocked_subdict_zzz {
                 offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             }
             
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     bfd.sp[i] = spep_store[spep_start+4*i];
-            //     bfd.ep[i] = spep_store[spep_start+(4*i+1)];
-            //     bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
-            //     bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
-            // }
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                bfd.sp[i] = spep_store[spep_start+2*i];
+                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+            }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
         return csi;
@@ -487,13 +605,10 @@ struct factor_coder_blocked_subdict_pv {
                 offset_coder.encode(ofs, bfd.offsets.data(), bfd.num_offsets);
             }
             
-            // encode sp ep for RLZ-P2
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     spep_store.push_back(bfd.sp[i]);
-            //     spep_store.push_back(bfd.ep[i]);
-            //     spep_store.push_back(bfd.sp1[i]);
-            //     spep_store.push_back(bfd.ep1[i]);
-            // }   
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                spep_store.push_back(bfd.sp[i]);
+                spep_store.push_back(bfd.ep[i]);
+            }   
         }
     }
 
@@ -645,12 +760,10 @@ struct factor_coder_blocked_subdict_pv {
                 offset_coder.decode(ifs, bfd.offsets.data(), bfd.num_offsets);
             }
             
-            // for(size_t i=0;i<bfd.num_offsets;i++) {
-            //     bfd.sp[i] = spep_store[spep_start+4*i];
-            //     bfd.ep[i] = spep_store[spep_start+(4*i+1)];
-            //     bfd.sp1[i] = spep_store[spep_start+(4*i+2)];
-            //     bfd.ep1[i] = spep_store[spep_start+(4*i+3)];
-            // }
+            for(size_t i=0;i<bfd.num_offsets;i++) {
+                bfd.sp[i] = spep_store[spep_start+2*i];
+                bfd.ep[i] = spep_store[spep_start+(2*i+1)];
+            }
         }
         csi.offset_bytes = (ifs.tellg() - off_pos)/8;
         return csi;

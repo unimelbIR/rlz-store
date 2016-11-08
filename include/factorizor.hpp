@@ -65,11 +65,11 @@ struct factorizor {
         size_t syms_encoded = 0;
         while (!factor_itr.finished()) {
             if (factor_itr.len == 0) {
-                fs.add_to_block_factor(coder, itr + syms_encoded, 0, 1,0,0,0,0);
+                fs.add_to_block_factor(coder, itr + syms_encoded, 0, 1,0,0);
                 syms_encoded++;
             } else {
                 auto offset = t_factor_selector::template pick_offset<>(idx, factor_itr,t_search_local_block_context,encoding_block_size);
-                fs.add_to_block_factor(coder, itr + syms_encoded, offset, factor_itr.len,factor_itr.sp,factor_itr.ep,factor_itr.sp1,factor_itr.ep1);
+                fs.add_to_block_factor(coder, itr + syms_encoded, offset, factor_itr.len,factor_itr.sp,factor_itr.ep);
                 syms_encoded += factor_itr.len;
             }
             ++factor_itr;

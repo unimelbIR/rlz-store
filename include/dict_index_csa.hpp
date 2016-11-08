@@ -15,8 +15,6 @@ struct factor_itr_csa {
     uint64_t block_len;
     uint64_t sp;
     uint64_t ep;
-    uint64_t sp1;
-    uint64_t ep1;
     uint64_t len;
     uint64_t local_offset;
     uint8_t sym;
@@ -147,8 +145,6 @@ struct factor_itr_csa {
                 factor_start = itr;
                 return;
             } else { // found substring
-                sp1 = sp;
-                ep1 = ep;
                 sp = res_sp;
                 ep = res_ep;
                 ++itr;

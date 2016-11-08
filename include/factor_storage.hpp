@@ -175,9 +175,9 @@ struct factor_storage {
     }
     
     template <class t_coder, class t_itr>
-    void add_to_block_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t sp, uint32_t ep, uint32_t sp1, uint32_t ep1)
+    void add_to_block_factor(t_coder& coder, t_itr text_itr, uint32_t offset, uint32_t len, uint32_t sp, uint32_t ep)
     {
-        tmp_block_factor_data.add_factor(coder, text_itr, offset, len,sp,ep,sp1,ep1);
+        tmp_block_factor_data.add_factor(coder, text_itr, offset, len,sp,ep);
     }
     void start_new_block()
     {
