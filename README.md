@@ -1,3 +1,6 @@
+# NOTICE
+
+For a "working version" of RLZ go to https://github.com/mpetri/rlz-store
 
 # Install Instructions
 
@@ -17,7 +20,7 @@
 
 # Creating a collection and index
 
-Create a collection from a file 
+Create a collection from a file
 
 `./create-sdsl-input.x -c ../collections/<name> -i <input file>`
 
